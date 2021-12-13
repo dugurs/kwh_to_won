@@ -1,0 +1,11 @@
+{
+  "domain": "kwh_to_won",
+  "name": "kWh to Won",
+  "config_flow": true,
+  "documentation": "https://github.com/dugurs/kwh2won",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@dugurs"],
+  "iot_class": "local_polling",
+  "version": "0.0.1"
+}
