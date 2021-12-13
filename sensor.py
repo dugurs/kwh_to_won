@@ -341,9 +341,11 @@ class ExtendSensor(SensorBase):
         # 에너지 / 사용일 * 월일수
         # 사용일 = (오늘 > 검침일) ? 오늘 - 검침일 : 전달일수 - 검침일 + 오늘
         # 월일수 = (오늘 > 검침일) ? 이번달일수 : 전달일수
-        if D.day > checkday :
+        if D.day == checkday :
+            return round(energy, 1)
+        elif D.day > checkday :
             lastdate = self.last_day_of_month(datetime.date(D.year, D.month, 1))
-            return round(energy / (D.day - checkday) * lastdate, 1)
+            return round(energy / (D.day - checkday) * lastdate.day, 1)
         else :
             prev_month = D - datetime.timedelta(days=D.day)
             lastdate = prev_month.day
