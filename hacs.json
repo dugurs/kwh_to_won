@@ -1,0 +1,6 @@
+{
+    "name": "[KR] 전기요금 계산기",
+    "country": "KR",
+    "domains": ["sensor"],
+    "render_readme": true
+  }
