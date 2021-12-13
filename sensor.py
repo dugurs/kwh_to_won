@@ -48,6 +48,8 @@ _LOGGER = logging.getLogger(__name__)
 
 SENSOR_TYPES = {
     'kwh2won': [None, 'won'],
+    'forecast': [None, 'kWh'],
+    'forecast_kwh2won': [None, 'won'],
 }
 
 
@@ -309,28 +311,50 @@ class ExtendSensor(SensorBase):
 
     def update(self):
         """Update the state."""
-        self._total_charge = self.kwh2won(self._energy)
-        self._state = self._total_charge
-        self._device_state_attributes['전기사용량'] = self._energy
-        self._device_state_attributes['검침일'] = self._checkday
-        self._device_state_attributes['사용용도'] = self._pressure
-        self._device_state_attributes['대가족_할인'] = self._bigfam_dc
-        self._device_state_attributes['복지_할인'] = self._welfare_dc
-        self._device_state_attributes['누진단계_상'] = self._prog_up
-        self._device_state_attributes['누진단계_하'] = self._prog_down
-        # self._device_state_attributes['prog_section'] = self._progUp + ' & ' + self._progDown
+        
+        if self._sensor_type == "forecast":
+            self._energy_forecast = self.energy_forecast(self._energy, self._checkday)
+            self._state = self._energy_forecast
+        else :
+            if self._sensor_type == "kwh2won":
+                self._total_charge = self.kwh2won(self._energy)
+                self._device_state_attributes['전기사용량'] = self._energy
+            else:
+                self._energy_forecast = self.energy_forecast(self._energy, self._checkday)
+                self._total_charge = self.kwh2won(self._energy_forecast)
+                self._device_state_attributes['전기예상사용량'] = self._energy_forecast
+            self._state = self._total_charge
+            self._device_state_attributes['검침일'] = self._checkday
+            self._device_state_attributes['사용용도'] = self._pressure
+            self._device_state_attributes['대가족_할인'] = self._bigfam_dc
+            self._device_state_attributes['복지_할인'] = self._welfare_dc
+            self._device_state_attributes['누진단계_상'] = self._prog_up
+            self._device_state_attributes['누진단계_하'] = self._prog_down
 
     async def async_update(self):
         """Update the state."""
         self.update()
 
 
+    # 예상 사용량
+    def energy_forecast(self, energy, checkday):
+        # 에너지 / 사용일 * 월일수
+        # 사용일 = (오늘 > 검침일) ? 오늘 - 검침일 : 전달일수 - 검침일 + 오늘
+        # 월일수 = (오늘 > 검침일) ? 이번달일수 : 전달일수
+        if D.day > checkday :
+            lastdate = self.last_day_of_month(datetime.date(D.year, D.month, 1))
+            return round(energy / (D.day - checkday) * lastdate, 1)
+        else :
+            prev_month = D - datetime.timedelta(days=D.day)
+            lastdate = prev_month.day
+            return round(energy / (lastdate + D.day - checkday) * lastdate, 1)
 
     # 달의 말일
     # last_day_of_month(datetime.date(2021, 12, 1))
     def last_day_of_month(self, any_day):
         next_month = any_day.replace(day=28) + datetime.timedelta(days=4)  # this will never fail
         return next_month - datetime.timedelta(days=next_month.day)
+
 
     # 누진 요금 구하기
     def prog_calc(self, energy,kwhprice,kwhsection):

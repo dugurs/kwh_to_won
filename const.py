@@ -3,7 +3,7 @@
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 MODEL = "kwh2won"
 MANUFACTURER = ""
 
@@ -26,6 +26,7 @@ WELFARE_DC_OPTION = {
     5:'차사위계층'
 }
 
+# https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp
 CALC_PARAMETER = {
     'low': {
         'basicprice' : [910, 1600, 7300], # 기본요금(원/호)
@@ -39,8 +40,8 @@ CALC_PARAMETER = {
         'elecBasic200Limit' : 4000
     },
     'high': {
-        'basicprice' : [910, 1600, 7300], # 기본요금(원/호)
-        'kwhprice' : [88.3, 182.9, 275.6], # 전력량 요금(원/kWh)
+        'basicprice' : [730, 1260, 6060], # 기본요금(원/호)
+        'kwhprice' : [73.3, 142.3, 210.6], # 전력량 요금(원/kWh)
         'kwhsectionUp' : [0, 200, 400], # 구간(kWh - 상계)
         'kwhsectionDown' : [0, 300, 450], # 구간(kWh - 하계)(7~8월)
         'adjustment' : [-5, 5.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액
