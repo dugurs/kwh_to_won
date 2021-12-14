@@ -208,7 +208,7 @@ class ExtendSensor(SensorBase):
         self._unit_of_measurement = SENSOR_TYPES[sensor_type][2]
         self._state = None
         self._device_state_attributes = {}
-        self._icon = None
+        self._icon = SENSOR_TYPES[sensor_type][3]
         self._device_class = SENSOR_TYPES[sensor_type][1]
         self._sensor_type = sensor_type
         self._unique_id = unique_id
