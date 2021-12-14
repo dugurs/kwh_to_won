@@ -1,15 +1,21 @@
 # kwh2won
 전기요금 계산기
-전기 월 사용량(kWh)으로
+- 전기 사용량을 사용요금으로 계산
+- 가정용저압, 고압 지원
+- 대가족할인 및 복지할인 계산 지원
 
-https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp
+한전 전기요금 계산기 (개편전 단가임!!)
+- (https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp)
 
 ## 스크린샷
-![screen1.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main//screen1.jpg)
+![screen1-1.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-1.jpg)
+![screen1-2.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-2.jpg)
+![screen1-3.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-3.jpg)
+![screen1-4.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-4.jpg)
 
 
 ## 보완 사항
-- energy 엔터티 셀렉트 목록으로 선택
+- 
 
 
 ## 발견된 문제점
