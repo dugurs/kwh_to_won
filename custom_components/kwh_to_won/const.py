@@ -3,7 +3,7 @@
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "0.0.2"
+VERSION = "0.0.3"
 MODEL = "kwh2won"
 MANUFACTURER = ""
 

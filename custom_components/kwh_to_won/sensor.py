@@ -18,7 +18,7 @@ from homeassistant.const import (
     CONF_ENTITY_PICTURE_TEMPLATE, CONF_SENSORS, EVENT_HOMEASSISTANT_START,
     MATCH_ALL, CONF_DEVICE_CLASS, STATE_UNKNOWN,
     STATE_UNAVAILABLE, ATTR_TEMPERATURE, TEMP_FAHRENHEIT,
-    CONF_UNIQUE_ID,
+    CONF_UNIQUE_ID, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR
 )
 from homeassistant.components.sensor import ENTITY_ID_FORMAT, \
     PLATFORM_SCHEMA, DEVICE_CLASSES_SCHEMA
@@ -34,22 +34,20 @@ from homeassistant.exceptions import TemplateError
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.event import async_track_state_change
-# from homeassistant.helpers.update_coordinator import (
-#     DataUpdateCoordinator,
-# )
 
 import locale
 import math
 import datetime
 
-D = datetime.datetime.now()
+NOW = datetime.datetime.now()
 
 _LOGGER = logging.getLogger(__name__)
 
+# 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
-    'kwh2won': [None, 'won'],
-    'forecast': [None, 'kWh'],
-    'forecast_kwh2won': [None, 'won'],
+    'kwh2won': ['전기 사용요금', None, '₩', 'mdi:cash-usd'],
+    'forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter'],
+    'forecast_kwh2won': ['전기 예상요금', None, '₩', 'mdi:cash-usd'],
 }
 
 
@@ -59,10 +57,6 @@ SENSOR_TYPES = {
 # required.
 async def async_setup_entry(hass, config_entry, async_add_devices):
     """Add sensors for passed config_entry in HA."""
-    
-    # currentLocale = "en"
-    # if(locale.getlocale()[0] == 'Korean_Korea'):
-    #     currentLocale = "ko"
 
     device = Device(config_entry.data.get("device_name"))
     energy_entity = config_entry.data.get('energy_entity')
@@ -88,16 +82,6 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
             raise ConfigEntryAuthFailed from err
         except ApiError as err:
             raise UpdateFailed(f"Error communicating with API: {err}")
-
-    # coordinator = DataUpdateCoordinator(
-    #     hass,
-    #     _LOGGER,
-    #     # Name of the data. For logging purposes.
-    #     name=device.device_id,
-    #     update_method=async_update_data,
-    #     # Polling interval. Will only be polled if there are subscribers.
-    #     update_interval=datetime.timedelta(seconds=int(config_entry.data.get("scan_interval", 60)))
-    # )
 
     new_devices = []
 
@@ -220,12 +204,12 @@ class ExtendSensor(SensorBase):
 
         self.hass = hass
         self.entity_id = async_generate_entity_id(ENTITY_ID_FORMAT, "{}_{}".format(device.device_id, sensor_type), hass=hass)
-        self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][1])
-        self._unit_of_measurement = SENSOR_TYPES[sensor_type][1]
+        self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
+        self._unit_of_measurement = SENSOR_TYPES[sensor_type][2]
         self._state = None
         self._device_state_attributes = {}
-        self._icon = None
-        self._device_class = SENSOR_TYPES[sensor_type][0]
+        self._icon = SENSOR_TYPES[sensor_type][3]
+        self._device_class = SENSOR_TYPES[sensor_type][1]
         self._sensor_type = sensor_type
         self._unique_id = unique_id
         self._device = device
@@ -338,18 +322,20 @@ class ExtendSensor(SensorBase):
 
     # 예상 사용량
     def energy_forecast(self, energy, checkday):
-        # 에너지 / 사용일 * 월일수
         # 사용일 = (오늘 > 검침일) ? 오늘 - 검침일 : 전달일수 - 검침일 + 오늘
         # 월일수 = (오늘 > 검침일) ? 이번달일수 : 전달일수
-        if D.day == checkday :
-            return round(energy, 1)
-        elif D.day > checkday :
-            lastdate = self.last_day_of_month(datetime.date(D.year, D.month, 1))
-            return round(energy / (D.day - checkday) * lastdate.day, 1)
+        # 시간나누기 = ((사용일-1)*24)+(현재시간+1)
+        # 시간곱하기 = 월일수*24
+        # 예측 = 에너지 / 시간나누기 * 시간곱하기
+        if NOW.day > checkday :
+            lastday = self.last_day_of_month(NOW)
+            lastday = lastday.day
+            useday = NOW.day - checkday
         else :
-            prev_month = D - datetime.timedelta(days=D.day)
-            lastdate = prev_month.day
-            return round(energy / (lastdate + D.day - checkday) * lastdate, 1)
+            lastday = NOW - datetime.timedelta(days=NOW.day)
+            lastday = lastday.day
+            useday = lastday + NOW.day - checkday
+        return round(energy / (((useday - 1) * 24) + NOW.hour + 1) * (lastday * 24), 1)
 
     # 달의 말일
     # last_day_of_month(datetime.date(2021, 12, 1))
@@ -372,7 +358,7 @@ class ExtendSensor(SensorBase):
 
     def kwh2won(self,energy) :
         # d = new Date()
-        monthday = (D.month * 100) + D.day
+        monthday = (NOW.month * 100) + NOW.day
         # monthday = 710
         checkday = self._checkday # 검침일
 
@@ -403,7 +389,7 @@ class ExtendSensor(SensorBase):
 
         # 검침일이 말일일때
         if checkday == 0 :
-            lastdate = self.last_day_of_month(datetime.date(D.year, D.month, 1))
+            lastdate = self.last_day_of_month(NOW)
             checkday = lastdate.day
 
         adjustValue = math.floor(energy * (adjustment[0] + adjustment[1] + adjustment[2])) # 조정액
@@ -545,8 +531,6 @@ class ExtendSensor(SensorBase):
             totalCharge = int(totalCharge/2)
         totalCharge =  math.floor(totalCharge/10)*10
         return totalCharge
-
-
 
 
 def _is_valid_state(state) -> bool:

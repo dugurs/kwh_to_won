@@ -26,7 +26,7 @@ DATA_SCHEMA = vol.Schema(
     {
         vol.Required("device_name"): str,
         vol.Required("energy_entity"): str,
-        vol.Required("checkday_config"): int,
+        vol.Range("checkday_config", min=0, max=28): int,
         vol.Required("pressure_config", default="low"): vol.In(PRESSURE_OPTION),
         vol.Required("bigfam_dc_config", default=0): vol.In(BIGFAM_DC_OPTION),
         vol.Required("welfare_dc_config", default=0): vol.In(WELFARE_DC_OPTION),
