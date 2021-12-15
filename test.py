@@ -29,15 +29,24 @@ CALC_PARAMETER = {
     },
 }
 
+k2w_config = {
+    'energy' : 316,
+    'pressure' : 'low',
+    'checkday' : 25, # 검침일
+    'monthday' : 1215, # 월일 mmdd
+    'bigfam_dc' : 1, # 대가족 요금할인
+    'welfare_dc' : 0, # 복지 요금할인
+}
 
-class Calculator:
-    def __init__(self, energy):
-        self._pressure = 'low'
-        self._bigfam_dc = 1 # 대가족 요금할인
-        self._welfare_dc = 0 # 복지 요금할인
-        self._checkday = 25 # 검침일
-        self._monthday = 1215 
-        self.kwh2won(energy)
+class kwh2won:
+    def __init__(self, cfg):
+        self._energy = cfg['energy'] 
+        self._pressure = cfg['pressure']
+        self._checkday = cfg['checkday']
+        self._monthday = cfg['monthday'] 
+        self._bigfam_dc = cfg['bigfam_dc']
+        self._welfare_dc = cfg['welfare_dc']
+        self.kwh2won()
 
 
     # 달의 말일
@@ -59,8 +68,9 @@ class Calculator:
                 section += 1 # 누진 단계
         return {'won':won, 'section':section}
 
-    def kwh2won(self,energy) :
+    def kwh2won(self) :
         # monthday = (NOW.month * 100) + NOW.day
+        energy = self._energy
         monthday = self._monthday
         checkday = self._checkday # 검침일
 
@@ -235,4 +245,4 @@ class Calculator:
         print(f'{totalCharge}')
         return totalCharge
 
-Calculator(316)
+kwh2won(k2w_config)
