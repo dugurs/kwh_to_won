@@ -99,6 +99,8 @@ class kwh2won_api:
         return {'won':won, 'section':section}
 
     def kwh2won(self, energy) :
+        if energy == 0 :
+            energy == 0.001
         # monthday = (NOW.month * 100) + NOW.day
         monthday = self._monthday
         checkday = self._checkday # 검침일
@@ -269,10 +271,9 @@ class kwh2won_api:
 
         if (totalCharge < 0) :
             totalCharge = 0
-        elif (energy == 0) : # 사용량이 0 이면 50% 할인
-            totalCharge = int(totalCharge/2)
         totalCharge =  math.floor(totalCharge/10)*10
         _LOGGER.debug(f'{totalCharge}')
+        
         return {
             'won': totalCharge,
             'progUp': progUp,
