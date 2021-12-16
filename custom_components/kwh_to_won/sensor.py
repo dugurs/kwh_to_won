@@ -45,9 +45,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
-    'kwh2won': ['전기 사용요금', None, '₩', 'mdi:cash-usd'],
-    'forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter'],
-    'forecast_kwh2won': ['전기 예상요금', None, '₩', 'mdi:cash-usd'],
+    'kwh2won': ['전기 사용요금', None, '원', 'mdi:currency-krw'],
+    'forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:calendar-check'],
+    'forecast_kwh2won': ['전기 예상요금', None, '원', 'mdi:currency-krw'],
 }
 
 
