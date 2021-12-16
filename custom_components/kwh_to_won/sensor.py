@@ -45,9 +45,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
-    'kwh2won': ['전기 사용요금', None, '₩', 'mdi:cash-usd'],
+    'kwh2won': ['전기 사용요금', None, '원', 'mdi:cash-100'],
     'forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter'],
-    'forecast_kwh2won': ['전기 예상요금', None, '₩', 'mdi:cash-usd'],
+    'forecast_kwh2won': ['전기 예상요금', None, '원', 'mdi:cash-100'],
 }
 
 
@@ -207,7 +207,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._unit_of_measurement = SENSOR_TYPES[sensor_type][2]
         self._state = None
-        self._device_state_attributes = {}
+        self._extra_state_attributess = {}
         self._icon = SENSOR_TYPES[sensor_type][3]
         self._device_class = SENSOR_TYPES[sensor_type][1]
         self._sensor_type = sensor_type
@@ -229,17 +229,16 @@ class ExtendSensor(SensorBase):
         async_track_state_change(
             self.hass, self._energy_entity, self.energy_state_listener)
 
-        energy_state = hass.states.get(energy_entity)
-        if _is_valid_state(energy_state):
-            # self._energy = math.floor(float(energy_state.state)*10)/10 # kwh 소수 1자리 이하 버림
-            self._energy = float(energy_state.state)
+        # energy_state = hass.states.get(energy_entity)
+        # if _is_valid_state(energy_state):
+        #     # self._energy = math.floor(float(energy_state.state)*10)/10 # kwh 소수 1자리 이하 버림
+        #     self._energy = float(energy_state.state)
 
 
     def energy_state_listener(self, entity, old_state, new_state):
         """Handle temperature device state changes."""
         if _is_valid_state(new_state):
             self._energy = util.convert(new_state.state, float)
-            # self._energy = math.floor(float(new_state.state)*10)/10 # kwh 소수 1자리 이하 버림
         self.async_schedule_update_ha_state(True)
 
     def unique_id(self):
@@ -258,9 +257,9 @@ class ExtendSensor(SensorBase):
         return self._state
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributess(self):
         """Return the state attributes."""
-        return self._device_state_attributes
+        return self._extra_state_attributess
 
     @property
     def icon(self):
@@ -302,18 +301,18 @@ class ExtendSensor(SensorBase):
         else :
             if self._sensor_type == "kwh2won":
                 self._total_charge = self.kwh2won(self._energy)
-                self._device_state_attributes['전기사용량'] = self._energy
+                self._extra_state_attributess['전기사용량'] = self._energy
             else:
                 self._energy_forecast = self.energy_forecast(self._energy, self._checkday)
                 self._total_charge = self.kwh2won(self._energy_forecast)
-                self._device_state_attributes['전기예상사용량'] = self._energy_forecast
+                self._extra_state_attributess['전기예상사용량'] = self._energy_forecast
             self._state = self._total_charge
-            self._device_state_attributes['검침일'] = self._checkday
-            self._device_state_attributes['사용용도'] = self._pressure
-            self._device_state_attributes['대가족_할인'] = self._bigfam_dc
-            self._device_state_attributes['복지_할인'] = self._welfare_dc
-            self._device_state_attributes['누진단계_상'] = self._prog_up
-            self._device_state_attributes['누진단계_하'] = self._prog_down
+            self._extra_state_attributess['검침일'] = self._checkday
+            self._extra_state_attributess['사용용도'] = self._pressure
+            self._extra_state_attributess['대가족_할인'] = self._bigfam_dc
+            self._extra_state_attributess['복지_할인'] = self._welfare_dc
+            self._extra_state_attributess['누진단계_상'] = self._prog_up
+            self._extra_state_attributess['누진단계_하'] = self._prog_down
 
     async def async_update(self):
         """Update the state."""
