@@ -5,41 +5,27 @@
 # to display it in the UI (for know types). The unit_of_measurement property tells HA
 # what the unit is, so it can display the correct range. For predefined types (such as
 # battery), the unit_of_measurement should match what's expected.
-import random
 import logging
-import time
-import homeassistant
 from typing import Optional
 from homeassistant.const import (
-    DEVICE_CLASS_BATTERY,
-    PERCENTAGE,
-    DEVICE_CLASS_ILLUMINANCE,
-    ATTR_FRIENDLY_NAME, ATTR_UNIT_OF_MEASUREMENT, CONF_ICON_TEMPLATE,
-    CONF_ENTITY_PICTURE_TEMPLATE, CONF_SENSORS, EVENT_HOMEASSISTANT_START,
-    MATCH_ALL, CONF_DEVICE_CLASS, STATE_UNKNOWN,
-    STATE_UNAVAILABLE, ATTR_TEMPERATURE, TEMP_FAHRENHEIT,
+    STATE_UNKNOWN,
+    STATE_UNAVAILABLE,
     CONF_UNIQUE_ID, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR
 )
-from homeassistant.components.sensor import ENTITY_ID_FORMAT, \
-    PLATFORM_SCHEMA, DEVICE_CLASSES_SCHEMA
+from homeassistant.components.sensor import ENTITY_ID_FORMAT
 
-from homeassistant.const import ATTR_VOLTAGE
 import asyncio
 
-from homeassistant import components
 from homeassistant import util
 from homeassistant.helpers.entity import Entity
-from .const import DOMAIN, VERSION, MANUFACTURER, MODEL, CALC_PARAMETER
+from .const import DOMAIN, VERSION, MANUFACTURER, MODEL
 from homeassistant.exceptions import TemplateError
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.event import async_track_state_change
 
-import locale
+from .kwh2won_api import NOW, kwh2won_api as K2WAPI
 import math
-import datetime
-
-NOW = datetime.datetime.now()
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -207,7 +193,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._unit_of_measurement = SENSOR_TYPES[sensor_type][2]
         self._state = None
-        self._extra_state_attributess = {}
+        self._extra_state_attributes = {}
         self._icon = SENSOR_TYPES[sensor_type][3]
         self._device_class = SENSOR_TYPES[sensor_type][1]
         self._sensor_type = sensor_type
@@ -225,15 +211,21 @@ class ExtendSensor(SensorBase):
         self._total_charge = 0 # 최종금액
         self._prog_up = 0
         self._prog_down = 0
+        self._k2h_config = {
+            'pressure' : pressure_config,
+            'checkday' : checkday_config, # 검침일
+            'monthday' : (NOW.month * 100) + NOW.day, # 월일 mmdd
+            'bigfam_dc' : bigfam_dc_config, # 대가족 요금할인
+            'welfare_dc' : welfare_dc_config, # 복지 요금할인
+        }
+        self.KWH2WON = K2WAPI(self._k2h_config)
 
         async_track_state_change(
             self.hass, self._energy_entity, self.energy_state_listener)
 
         # energy_state = hass.states.get(energy_entity)
         # if _is_valid_state(energy_state):
-        #     # self._energy = math.floor(float(energy_state.state)*10)/10 # kwh 소수 1자리 이하 버림
-        #     self._energy = float(energy_state.state)
-
+        #     self._energy = math.floor(float(energy_state.state)*10)/10 # kwh 소수 1자리 이하 버림
 
     def energy_state_listener(self, entity, old_state, new_state):
         """Handle temperature device state changes."""
@@ -257,9 +249,9 @@ class ExtendSensor(SensorBase):
         return self._state
 
     @property
-    def extra_state_attributess(self):
+    def extra_state_attributes(self):
         """Return the state attributes."""
-        return self._extra_state_attributess
+        return self._extra_state_attributes
 
     @property
     def icon(self):
@@ -296,240 +288,29 @@ class ExtendSensor(SensorBase):
         """Update the state."""
         
         if self._sensor_type == "forecast":
-            self._energy_forecast = self.energy_forecast(self._energy, self._checkday)
+            self._energy_forecast = self.KWH2WON.energy_forecast(self._energy)
             self._state = self._energy_forecast
         else :
             if self._sensor_type == "kwh2won":
-                self._total_charge = self.kwh2won(self._energy)
-                self._extra_state_attributess['전기사용량'] = self._energy
+                ret = self.KWH2WON.kwh2won(self._energy)
+                self._total_charge = ret['won']
+                self._extra_state_attributes['전기사용량'] = self._energy
             else:
-                self._energy_forecast = self.energy_forecast(self._energy, self._checkday)
-                self._total_charge = self.kwh2won(self._energy_forecast)
-                self._extra_state_attributess['전기예상사용량'] = self._energy_forecast
+                self._energy_forecast = self.KWH2WON.energy_forecast(self._energy)
+                ret = self.KWH2WON.kwh2won(self._energy_forecast)
+                self._total_charge = ret['won']
+                self._extra_state_attributes['전기예상사용량'] = self._energy_forecast
             self._state = self._total_charge
-            self._extra_state_attributess['검침일'] = self._checkday
-            self._extra_state_attributess['사용용도'] = self._pressure
-            self._extra_state_attributess['대가족_할인'] = self._bigfam_dc
-            self._extra_state_attributess['복지_할인'] = self._welfare_dc
-            self._extra_state_attributess['누진단계_상'] = self._prog_up
-            self._extra_state_attributess['누진단계_하'] = self._prog_down
+            self._extra_state_attributes['검침일'] = self._checkday
+            self._extra_state_attributes['사용용도'] = self._pressure
+            self._extra_state_attributes['대가족_할인'] = self._bigfam_dc
+            self._extra_state_attributes['복지_할인'] = self._welfare_dc
+            self._extra_state_attributes['누진단계_상'] = ret['progUp']
+            self._extra_state_attributes['누진단계_하'] = ret['progDown']
 
     async def async_update(self):
         """Update the state."""
         self.update()
-
-
-    # 예상 사용량
-    def energy_forecast(self, energy, checkday):
-        # 사용일 = (오늘 > 검침일) ? 오늘 - 검침일 : 전달일수 - 검침일 + 오늘
-        # 월일수 = (오늘 > 검침일) ? 이번달일수 : 전달일수
-        # 시간나누기 = ((사용일-1)*24)+(현재시간+1)
-        # 시간곱하기 = 월일수*24
-        # 예측 = 에너지 / 시간나누기 * 시간곱하기
-        if NOW.day > checkday :
-            lastday = self.last_day_of_month(NOW)
-            lastday = lastday.day
-            useday = NOW.day - checkday
-        else :
-            lastday = NOW - datetime.timedelta(days=NOW.day)
-            lastday = lastday.day
-            useday = lastday + NOW.day - checkday
-        return round(energy / (((useday - 1) * 24) + NOW.hour + 1) * (lastday * 24), 1)
-
-    # 달의 말일
-    # last_day_of_month(datetime.date(2021, 12, 1))
-    def last_day_of_month(self, any_day):
-        next_month = any_day.replace(day=28) + datetime.timedelta(days=4)  # this will never fail
-        return next_month - datetime.timedelta(days=next_month.day)
-
-
-    # 누진 요금 구하기
-    def prog_calc(self, energy,kwhprice,kwhsection):
-        won = 0
-        section = 0
-        for s in [2,1,0]:
-            if kwhsection[s] < energy : # 상계금액
-                # print(f'{s+1}단계 금액 : {(energy - kwhsection[s]) * kwhprice[s]}won = {energy - kwhsection[s]}kWh * {kwhprice[s]}won, energy: {energy}')
-                won += (energy - kwhsection[s]) * kwhprice[s] # 구간 요금 계산
-                energy -= energy - kwhsection[s] # 계산된 구간 용량 빼기
-                section += 1 # 누진 단계
-        return {'won':won, 'section':section}
-
-    def kwh2won(self,energy) :
-        # d = new Date()
-        monthday = (NOW.month * 100) + NOW.day
-        # monthday = 710
-        checkday = self._checkday # 검침일
-
-        # basicprice = [910, 1600, 7300] # 기본요금(원/호)
-        # kwhprice = [88.3, 182.9, 275.6] # 전력량 요금(원/kWh)
-        # # kwhprice = [93.3, 187.9, 280.6] # 전력량 요금(원/kWh) - 개편전 요금
-        # kwhsectionUp = [0, 200, 400] # 구간(kWh - 상계)
-        # kwhsectionDown = [0, 300, 450] # 구간(kWh - 하계)(7~8월)
-        # adjustment = [-5, 5.3, 0] # 환경비용차감 + 기후환경요금 + 연료비조정액
-        # # adjustment = [-5, 5.3, -3] # 환경비용차감 + 기후환경요금 + 연료비조정액 - 개편전 요금
-        pressure = self._pressure # 저압 'low', 고압 'high'
-        basicprice = CALC_PARAMETER[pressure]['basicprice'] # 기본요금(원/호)
-        kwhprice = CALC_PARAMETER[pressure]['kwhprice'] # 전력량 요금(원/kWh)
-        kwhsectionUp = CALC_PARAMETER[pressure]['kwhsectionUp'] # 구간(kWh - 상계)
-        kwhsectionDown = CALC_PARAMETER[pressure]['kwhsectionDown'] # 구간(kWh - 하계)(7~8월)
-        adjustment = CALC_PARAMETER[pressure]['adjustment'] # 환경비용차감 + 기후환경요금 + 연료비조정액
-        elecBasicLimit = CALC_PARAMETER[pressure]['elecBasicLimit'] # 
-        
-        dayUp = 0 # 상계일수
-        dayDown = 0 # 하계일수 (7,8월)
-        DemandUp = 0 # 상계 전력량요금
-        DemandDown = 0 # 하계 전력량요금
-        progUp = 0 # 누진단계
-        progDown = 0
-        # BasicCharge = 0 # 기본요금
-        UsingCharge = 0 # 전력량요금
-        totalCharge = 0 # 최종금액
-
-        # 검침일이 말일일때
-        if checkday == 0 :
-            lastdate = self.last_day_of_month(NOW)
-            checkday = lastdate.day
-
-        adjustValue = math.floor(energy * (adjustment[0] + adjustment[1] + adjustment[2])) # 조정액
-        # print(f'energy {energy}')
-        # print(f'조정액 {adjustValue} = {adjustment[0]} + {adjustment[1]} + {adjustment[2]}')
-        # print(f'월일 {monthday}, 검침일 {checkday}')
-
-        # 누진 계산
-        # 상계요금
-        prog = self.prog_calc(energy,kwhprice,kwhsectionUp)
-        DemandUp = prog['won']
-        progUp = prog['section']
-        self._prog_up = progUp
-        # print(f'상계 요금 : {basicprice[progUp-1]+DemandUp}원 = {progUp}단계, 기본 {basicprice[progUp-1]}원 + 사용 {DemandUp}원')
-        DemandUp += basicprice[progUp-1] # 기본요금 더하기
-
-        if (monthday > checkday + 600) and (monthday <= checkday + 900) : # 하계(7~8월), 상하계 사용 일수 계산
-            # 하계요금
-            prog = self.prog_calc(energy,kwhprice,kwhsectionDown)
-            DemandDown = prog['won']
-            progDown = prog['section']
-            self._prog_down = progDown
-            # print(f'하계 요금 : {basicprice[progDown-1]+DemandDown}원 = {progDown}단계, 기본 {basicprice[progDown-1]}원 + 사용 {DemandDown}원')
-            DemandDown += basicprice[progDown-1]
-
-            if monthday <= checkday + 700 : # 검침일이 7월일때 
-                dayUp = 30 - checkday
-                dayDown = checkday
-            elif monthday <= checkday + 800 : # 검침일이 8월일때 
-                dayUp = 0
-                dayDown = 31
-            else : # 검침일이 9월일때 
-                dayUp = checkday
-                dayDown = 31 - checkday
-            # print(f'상계 일수 {dayUp}일, 일계요금 {math.floor(DemandUp * dayUp / (dayUp+dayDown))}')
-            # print(f'하계 일수 {dayDown}일, 일계요금 {math.floor(DemandDown * dayDown / (dayUp+dayDown))}')
-            UsingCharge = math.floor(DemandUp * dayUp / (dayUp+dayDown)) + math.floor(DemandDown * dayDown / (dayUp+dayDown))
-        else : # 상계
-            # print(f'상계 일수 *일, 일계요금 {DemandUp}원')
-            # print(f'하계 일수 0일, 일계요금 0원')
-            UsingCharge = DemandUp
-
-        iBigFamBoolean = self._bigfam_dc # 대가족 요금할인
-        iWelfareDcBoolean = self._welfare_dc # 복지 요금할인
-
-        dcValue = 0 # 최종 할인요금
-        elecBasicValue = 0 # 필수사용량 보장공제
-        elecBasic200Value = 0 # 200kWh 이하 감액
-
-        # 필수사용량 보장공제
-        # 가정용 저압 [200kWh 이하, 최대 2,000원]
-        # 가정용 고압, 복지할인시 [200kWh 이하, 2,500원]
-        # (기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액) - 1000
-        elecBasic = 200
-        if (energy <= elecBasic) :
-            elecBasicValue = UsingCharge + adjustValue - 1000
-            if elecBasicValue > elecBasicLimit :
-                elecBasicValue = elecBasicLimit
-                # print(f'필수사용량 보장공제 : {elecBasicValue}')
-
-
-        if (iBigFamBoolean or iWelfareDcBoolean) :
-            # 복지할인
-            # 필수사용량 보장공제 = 0
-            # 200kWh 이하 감액(원미만 절사) = 저압 4,000  고압 2,500
-            if (energy <= elecBasic) :
-                elecBasicValue = 0
-                elecBasic200Value = UsingCharge + adjustValue
-                if elecBasic200Value > elecBasic200Limit :
-                    elecBasic200Value = elecBasic200Limit
-                # print(f'200kWh 이하 감액 : {elecBasic200Value}')
-
-            # 복지 요금할인
-            # B1 : 독립유공자,국가유공자,5.18민주유공자,장애인 (16,000원 한도)
-            # B2 : 사회복지시설 (전기요금계((기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액) － 필수사용량 보장공제) x 30%, 한도 없음)
-            # B3 : 기초생활(생계.의료) (16,000원 한도) + 중복할인
-            # B4 : 기초생활(주거.교육) (10,000원 한도) + 중복할인
-            # B5 : 차사위계층 (8,000원 한도) + 중복할인
-            # B  : 전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액 － 200kWh이하감액 － 복지할인)
-            # B2 :              전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액 － 200kWh이하감액 － 복지할인 － 필수사용량 보장공제)
-            iWelfareDcValue = 0
-            if (iWelfareDcBoolean) :
-                iWelfareDcValue = math.floor(UsingCharge + adjustValue)
-                if (iWelfareDcBoolean == 1) : # B1
-                    if (iWelfareDcValue > 16000) :
-                        iWelfareDcValue = 16000
-                    # print(f'유공자,장애인 : {iWelfareDcValue} = (전기요금계 - 200kWh이하감액 ) or 16,000')
-                elif (iWelfareDcBoolean == 2) :
-                    iWelfareDcValue = math.floor((UsingCharge + adjustValue) * 0.3)
-                    # print(f'사회복지시설 : {iWelfareDcValue} = (전기요금계 - 필수사용량 보장공제 ) x 30%, 한도 없음')
-                elif (iWelfareDcBoolean == 3) :
-                    if (iWelfareDcValue > 16000) :
-                        iWelfareDcValue = 16000
-                    # print(f'기초생활(생계.의료) : {iWelfareDcValue} = (전기요금계 - 200kWh이하감액 ) or 16,000')
-                elif (iWelfareDcBoolean == 4) :
-                    if (iWelfareDcValue > 10000) :
-                        iWelfareDcValue = 10000
-                    # print(f'기초생활(주거.교육) : {iWelfareDcValue} = (전기요금계 - 200kWh이하감액 ) or 10,000')
-                elif (iWelfareDcBoolean == 5) :
-                    if (iWelfareDcValue > 8000) :
-                        iWelfareDcValue = 8000
-                    # print(f'차사위계층 : {iWelfareDcValue} = (전기요금계 - 200kWh이하감액 ) or 8,000')
-
-            # 대가족 요금할인
-            # A1 : 5인이상 가구,출산가구,3자녀이상 가구 (16,000원 한도)
-            # A2 : 생명유지장치 (한도 없음)
-            # 전기요금계((기본요금 ＋ 전력량요금 － 필수사용량 보장공제 ＋ 기후환경요금 ± 연료비조정액) － 200kWh이하감액) x 30% = 대가족 요금할인
-            iBigFamValue = 0
-            if (iBigFamBoolean) :
-                iWelfareDcValue_temp = 0
-                if (iWelfareDcBoolean >= 2) : # A2
-                    iWelfareDcValue_temp = iWelfareDcValue
-                iBigFamValue = math.floor((UsingCharge + adjustValue - elecBasic200Value - iWelfareDcValue_temp) * 0.3)
-                if (iBigFamBoolean == 1) : # A1
-                    if (iBigFamValue > 16000) :
-                        iBigFamValue = 16000
-                    # print(f'대가족 요금할인 : {iBigFamValue} = 전기요금계 - {elecBasic200Value} - {iWelfareDcValue_temp} x30%, 최대 16000')
-                # else :
-                    # print(f'생명유지장치 : {iBigFamValue} = 전기요금계 - {elecBasic200Value} - {iWelfareDcValue_temp} x30%')
-
-            # A B 중 큰 금액 적용
-            # 차사위계층,기초생활은 중복할인 (A + B)
-            if (iWelfareDcBoolean >= 3) : # 중복할인
-                dcValue = iBigFamValue + iWelfareDcValue
-                # print(f'복지할인 {dcValue} = 대가족 요금할인 {iBigFamValue} + 복지 요금할인 {iWelfareDcValue}')
-            else :
-                if (iBigFamValue > iWelfareDcValue) :
-                    dcValue = iBigFamValue
-                else :
-                    dcValue = iWelfareDcValue 
-                # print(f'복지할인 {dcValue} = 대가족 요금할인 {iBigFamValue} or 복지 요금할인 {iWelfareDcValue} 더큰것')
-
-        # print(f'최종 요금 : {round((UsingCharge + adjustValue - elecBasicValue - elecBasic200Value - dcValue) * 1.137)}원 = ((사용요금 {UsingCharge} + (조정액 {adjustValue}) - 필수사용량 보장공제{elecBasicValue} - 200kWh 이하 감액{elecBasic200Value} - 복지할인 {dcValue}) * 부가세,기금1.137)')
-        totalCharge =  (UsingCharge + adjustValue - elecBasicValue - elecBasic200Value - dcValue) * 1.137
-
-        if (totalCharge < 0) :
-            totalCharge = 0
-        elif (energy == 0) : # 사용량이 0 이면 50% 할인
-            totalCharge = int(totalCharge/2)
-        totalCharge =  math.floor(totalCharge/10)*10
-        return totalCharge
 
 
 def _is_valid_state(state) -> bool:
