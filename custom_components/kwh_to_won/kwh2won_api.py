@@ -117,6 +117,7 @@ class kwh2won_api:
         kwhsectionDown = CALC_PARAMETER[pressure]['kwhsectionDown'] # 구간(kWh - 하계)(7~8월)
         adjustment = CALC_PARAMETER[pressure]['adjustment'] # 환경비용차감 + 기후환경요금 + 연료비조정액
         elecBasicLimit = CALC_PARAMETER[pressure]['elecBasicLimit'] # 
+        elecBasic200Limit = CALC_PARAMETER[pressure]['elecBasic200Limit'] # 
         
         dayUp = 0 # 상계일수
         dayDown = 0 # 하계일수 (7,8월)
