@@ -1,5 +1,5 @@
 {
-    "title": "전기요금 계산 센서",
+    "title": "전기요금 계산 센서 생성",
     "config": {
         "step": {
             "confirm": {
@@ -20,9 +20,9 @@
     "options": {
         "step": {
             "init": {
-                "title": "전기요금 계산 옵션.",
+                "title": "전기요금 계산 옵션 수정",
                 "data": {
-                    "energy_entity": "전기 에너지 엔터티를 입력하세요 (월간 kWh)",
+                    "energy_entity": "월간 전기 에너지 엔터티를 입력하세요 (kWh)",
                     "checkday_config": "검침일을 입력하세요. (말일은 0)",
                     "pressure_config": "사용용도를 선택하세요",
                     "bigfam_dc_config": "할인 해당사항을 선택하세요 (대가족)",
