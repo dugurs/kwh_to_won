@@ -230,7 +230,8 @@ class ExtendSensor(SensorBase):
     def energy_state_listener(self, entity, old_state, new_state):
         """Handle temperature device state changes."""
         if _is_valid_state(new_state):
-            self._energy = util.convert(new_state.state, float)
+            # self._energy = util.convert(new_state.state, float)
+            self._energy = math.floor(float(energy_state.state)*10)/10 # kwh 소수 1자리 이하 버림
         self.async_schedule_update_ha_state(True)
 
     def unique_id(self):
