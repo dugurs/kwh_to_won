@@ -42,8 +42,8 @@
 
 <br>
 
-## 보완 사항
-- 
+## 보완 예정 사항
+- 하계 할인액 상이 반영 (https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00107.jsp)
 
 <br>
 
