@@ -45,11 +45,11 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     """Add sensors for passed config_entry in HA."""
 
     device = Device(config_entry.data.get("device_name"))
-    energy_entity = config_entry.data.get('energy_entity')
-    checkday_config = int(config_entry.data.get('checkday_config'))
-    pressure_config = config_entry.data.get('pressure_config')
-    bigfam_dc_config = int(config_entry.data.get('bigfam_dc_config'))
-    welfare_dc_config = int(config_entry.data.get('welfare_dc_config'))
+    energy_entity = config_entry.options.get("energy_entity", config_entry.data.get("energy_entity"))
+    checkday_config = config_entry.options.get("checkday_config", config_entry.data.get("checkday_config"))
+    pressure_config = config_entry.options.get("pressure_config", config_entry.data.get("pressure_config"))
+    bigfam_dc_config = config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config"))
+    welfare_dc_config = config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config"))
 
     async def async_update_data():
         """Fetch data from API endpoint.
