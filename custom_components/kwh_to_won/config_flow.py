@@ -99,17 +99,3 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init", data_schema=vol.Schema(options_schema)
         )
-
-        options_schema = {}
-        data_list = ['energy_entity', 'checkday_config', 'pressure_config', 'bigfam_dc_config', 'welfare_dc_config']
-        for name, default, validation in OPTION_LIST:
-            to_default = conf.options.get(name, default)
-            if name in data_list and conf.options.get(name, default) == default:
-                to_default = conf.data.get(name, default)
-            key = (
-                vol.Required(name, default=to_default)
-            )
-            options_schema[key] = validation
-        return self.async_show_form(
-            step_id="init", data_schema=vol.Schema(options_schema)
-        )

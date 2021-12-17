@@ -100,7 +100,7 @@ class kwh2won_api:
 
     def kwh2won(self, energy) :
         if energy == 0 :
-            energy == 0.001
+            energy = 0.0001
         # monthday = (NOW.month * 100) + NOW.day
         monthday = self._monthday
         checkday = self._checkday # 검침일
@@ -275,7 +275,6 @@ class kwh2won_api:
         #     totalCharge = int(totalCharge/2)
         totalCharge =  math.floor(totalCharge/10)*10
         _LOGGER.debug(f'{totalCharge}')
-        
         return {
             'won': totalCharge,
             'progUp': progUp,
