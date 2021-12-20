@@ -62,61 +62,14 @@ CALC_PARAMETER = {
     }
 }
 
-
-
-# ==============================================
-# 기본요금(원미만 절사) basicWon
-# 환경비용차감(원미만 절사) diffWon = 사용량 energy * 단가 adjustment[0]
-# 기후환경요금(원미만 절사) climateWon = 사용량 energy (소수 첫째 자리 반올림) * 단가 adjustment[1]
-# 연료비조정액(원미만 절사) fuelWon = 사용량 energy * 단가 adjustment[2]
-# 월일수 monthDays = 30
-# 6월사용일 useDays = 10
-# 7월사용일 useDays_H = 20
-
-
-# 전력량요금(원미만 절사) kwhWon = ( (사용량 energy / 월일수 monthDays * 6월사용일 useDays['up'] ) * 6월단가 ) + ( (사용량 / 월일수 * 7월사용일) * 7월단가 ) + 환경비용차감 diffWon
-# : 18,660원
-# 6월 1단계 : 67kWh* ×93.3원** ＝ 6,251.1원
-#   * 67kWh - 0kWh = 67kWh
-#   ** 개정 전 단가
-# (하계 133 kWh)
-# ·1단계 : 133kWh* ×93.3원** ＝ 12,408.9원
-#   * 133kWh - 0kWh = 133kWh
-#   ** 개정 전 단가
-
-
-# 환경비용차감(원미만 절사) : 200kWh × -5원 = -1,000원
-# energy * 
-
-# 전기요금계 = Demand_Qty
-
-
-# 필수사용량보장공제
-# 6월 계산분 : 303.3원 + 5,916.1원 + 355.1원 － 201원 － 1,333.3원 ＞ 333.3원 (감액 후 최저요금)
-# 7월 계산분 : 606.7원 + 11,743.9원 + 704.9원 － 399원 － 1,333.3원 ＞ 666.7원 (감액 후 최저요금)
-# (기본요금 + 전력량요금 + 기후환경욕금 + 연료비조정액 + 필수사용량제공공재) / 월일수 * 6월사용일 > (1000 월일수 * 6월사용일 )
-# (기본요금 + 전력량요금 + 기후환경욕금 + 연료비조정액 + 필수사용량제공공재) / 월일수 * 7월사용일 > (1000 월일수 * 7월사용일 )
-
-# 전기요금계 = (기본요금 ＋ 전력량요금 － 필수사용량보장공제 ＋ 기후환경요금 + 연료비조정액)
-# : 910원 ＋ 17,660원 － 2,666원 ＋ 1,060원 － 600원 ＝ 16,364원
-
-# 부가가치세(원미만 4사 5입) =  전기요금계 * 0.1
-#  : 16,364원 × 0.1 ＝ 1,636원
-
-# 전력산업기반기금(10원미만 절사) = 전기요금계 * 단가
-#  : 16,364원 × 0.037 ＝ 600원
-
-# 청구금액(10원미만 절사) = (전기요금계 ＋ 부가가치세 ＋ 전력산업기반기금)
-# : 16,364원 ＋ 1,636원 ＋ 600원 ＝ 18,600원
-
 class kwh2won_api:
     def __init__(self, cfg):
         ret = {
-            'energy': 0,     # 사용량
+            'energy': 0.0001,     # 사용량
             'pressure' : 'low',
-            'checkDay' : 10, # 검침일
-            'today' : datetime.datetime(2022,7,10, 1,0,0), # 오늘
-            # 'today': NOW,
+            'checkDay' : 0, # 검침일
+            # 'today' : datetime.datetime(2022,7,10, 1,0,0), # 오늘
+            'today': NOW,
             'bigfamDcCfg' : 0, # 대가족 요금할인
             'welfareDcCfg' : 0, # 복지 요금할인
 
@@ -323,7 +276,7 @@ class kwh2won_api:
     def calc_fuelWon(self) :
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
-        fuelPrice = CALC_PARAMETER[pressure]['adjustment'][2] # 기후환경요금 단가
+        fuelPrice = CALC_PARAMETER[pressure]['adjustment'][2] # 연료비조정액 단가
         fuelWon = round(energy * fuelPrice)
         _LOGGER.debug(f"  연료비조정액:{fuelWon}원 = 사용량:{energy}kWh * 연료비조정단가:{fuelPrice}원")
         self._ret['fuelWon'] = fuelWon
@@ -347,6 +300,7 @@ class kwh2won_api:
             _LOGGER.debug(f"필수사용량 보장공제:{elecBasicDc} = {elecBasicLimit} or 기본요금합:{self._ret['basicWon']}원, 전력량요금합:{self._ret['kwhWon']}원, 환경비용차감:{self._ret['diffWon']}원 - 1000")
 
 
+    # 200kWh 이하 감액(원미만 절사) = 저압 4,000  고압 2,500
     def calc_elecBasic200(self) :
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
@@ -358,7 +312,7 @@ class kwh2won_api:
             if elecBasic200Dc > elecBasic200Limit :
                 elecBasic200Dc = elecBasic200Limit
             self._ret['elecBasic200Dc'] = elecBasic200Dc
-            _LOGGER.debug(f"200kWh 이하 감:{elecBasic200Dc} = {elecBasic200Limit} or 기본요금합:{self._ret['basicWon']}원 + 전력량요금합:{self._ret['kwhWon']}원 + 기후환경요금{self._ret['climateWon']} + 연료비조정액:{self._ret['fuelWon']}원")
+            _LOGGER.debug(f"200kWh 이하 감액:{elecBasic200Dc} = {elecBasic200Limit} or 기본요금합:{self._ret['basicWon']}원 + 전력량요금합:{self._ret['kwhWon']}원 + 기후환경요금{self._ret['climateWon']} + 연료비조정액:{self._ret['fuelWon']}원")
 
     # 복지할인(독립유공자)(원미만 절사) : 16,000원
     # 독립유공자 할인 : 16,000원
@@ -482,7 +436,6 @@ class kwh2won_api:
         else :
             self._ret['energy'] = energy
 
-        # self._ret['today'] = datetime.datetime(2021,11,20, 1,0,0) # 오늘
         _LOGGER.debug(f"오늘: {self._ret['today']}, 검침일: {self._ret['checkDay']}")
         
         self.calc_lengthDays()    # 월길이
@@ -508,7 +461,6 @@ class kwh2won_api:
 
 
 cfg = {
-    'energy': 0,     # 사용량
     'pressure' : 'low',
     'checkDay' : 10, # 검침일
     'today' : datetime.datetime(2022,7,10, 1,0,0), # 오늘
