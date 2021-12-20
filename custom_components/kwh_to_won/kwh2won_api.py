@@ -394,6 +394,8 @@ class kwh2won_api:
         elecBasic200Dc = self._ret['elecBasic200Dc']
         welfareDc = self._ret['welfareDc']
         season = self._ret['season']
+        if season == 'winter' : # 하계 혹은 기타 시즌 (동계는 기타시즌으로 셋팅)
+            season = 'etc'
         dc = CALC_PARAMETER['dc'][season] # 최대할인액
         welfareDc_temp = 0
         if (welfareDcCfg >= 2) : # A2
