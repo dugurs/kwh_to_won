@@ -43,7 +43,7 @@ CALC_PARAMETER = {
         'elecBasic200Limit' : 2500   # 200kWh이하 감액
     },
     'dc': {
-        'winter': {
+        'etc': {
             'a1': 16000, # 5인이상 가구,출산가구,3자녀이상 가구
             'a2': 0.3,   # 생명유지장치
             'b1': 16000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
@@ -124,8 +124,8 @@ class kwh2won_api:
     # 시간나누기 = ((사용일-1)*24)+(현재시간+1)
     # 시간곱하기 = 월일수*24
     # 예측 = 에너지 / 시간나누기 * 시간곱하기
-    def energy_forecast(self):
-        energy = self._ret['energy']
+    def energy_forecast(self, energy):
+        # energy = self._ret['energy']
         checkDay = self._ret['checkDay']
         if NOW.day > checkDay :
             lastday = self.last_day_of_month(NOW)
@@ -381,6 +381,8 @@ class kwh2won_api:
     def calc_welfareDc(self) :
         welfareDcCfg = self._ret['welfareDcCfg'] # 사용전력
         season = self._ret['season']
+        if season == 'winter' : # 하계 혹은 기타 시즌 (동계는 기타시즌으로 셋팅)
+            season = 'etc'
         dc = CALC_PARAMETER['dc'][season] # 최대할인액
         welfareDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['climateWon'] + self._ret['fuelWon'])
         if (welfareDcCfg == 1) : # B1
