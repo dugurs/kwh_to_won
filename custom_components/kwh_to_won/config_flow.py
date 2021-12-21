@@ -12,7 +12,7 @@ from .const import DOMAIN, BIGFAM_DC_OPTION, WELFARE_DC_OPTION, PRESSURE_OPTION
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required('device_name', default="Home"): str,
-        vol.Required('energy_entity', default="sensor.energy_monthly"): str,
+        vol.Required('energy_entity'): str,
         vol.Required("checkday_config", default=0): int,
         vol.Required("pressure_config", default="low"): vol.In(PRESSURE_OPTION),
         vol.Required("bigfam_dc_config", default=0): vol.In(BIGFAM_DC_OPTION),
@@ -22,7 +22,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 OPTION_LIST = [
-    ("energy_entity", "sensor.energy_monthly", str),
+    ("energy_entity", "", str),
     ("checkday_config", "0", int),
     ("pressure_config", "low", vol.In(PRESSURE_OPTION)),
     ("bigfam_dc_config", "0", vol.In(BIGFAM_DC_OPTION)),
