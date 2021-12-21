@@ -74,7 +74,7 @@ class kwh2won_api:
             'today': NOW,
             'bigfamDcCfg' : 0, # 대가족 요금할인
             'welfareDcCfg' : 0, # 복지 요금할인
-
+            'checkMonth':0, # 검침월
             'monthDays': 0, # 월일수
             'season': 'winter',
             'etc' : {
@@ -126,20 +126,24 @@ class kwh2won_api:
     # 예측 = 에너지 / 시간나누기 * 시간곱하기
     def energy_forecast(self, energy):
         # energy = self._ret['energy']
+        today = self._ret['today']
         checkDay = self._ret['checkDay']
-        if NOW.day > checkDay :
-            lastday = self.last_day_of_month(NOW)
+        if today.day >= checkDay :
+            lastday = self.last_day_of_month(today)
             lastday = lastday.day
-            useday = NOW.day - checkDay
+            useday = today.day - checkDay +1
         else :
-            lastday = NOW - datetime.timedelta(days=NOW.day)
+            lastday = today - datetime.timedelta(days=today.day)
             lastday = lastday.day
-            useday = lastday + NOW.day - checkDay
+            useday = lastday + today.day - checkDay +1
+        forcest = round(energy / (((useday - 1) * 24) + today.hour + 1) * (lastday * 24), 1)
+        _LOGGER.debug(f"예상사용량:{forcest}, 월길이 {lastday}, 사용일 {useday}, 검침일 {checkDay}, 오늘 {today.day}")
         return {
-            'forcest': round(energy / (((useday - 1) * 24) + NOW.hour + 1) * (lastday * 24), 1),
+            'forcest': forcest,
             'lastday': lastday,
             'useday': useday,
             'checkDay': checkDay,
+            'today': today.day,
         }
 
     # 달의 말일
@@ -149,87 +153,63 @@ class kwh2won_api:
         return next_month - datetime.timedelta(days=next_month.day)
 
 
-    # 월별 사용일 구하기
+    # 월 사용일 구하기
     def calc_lengthDays(self) :
         today = self._ret['today']
         checkDay = self._ret['checkDay']
-        if today.day > checkDay : # 오늘이 검침일보다 크면
+        checkDay_tmp = checkDay
+        if (checkDay == 0): # 말일미면, 말일로 셋팅
+            checkDay = self.last_day_of_month(today)
+            checkDay = checkDay.day
+        if today.day >= checkDay : # 오늘이 검침일보다 크면
             lastday = self.last_day_of_month(today) # 달의 마지막일이 전체 길이
-            monthDays = lastday.day
-        else : # 오늘이 검칠일과 같거나 작으면
+        else : # 오늘이 검칠일보다 작으면
             lastday = today - datetime.timedelta(days=today.day) # 전달의 마지막일이 전체 길이
-            monthDays = lastday.day
-        self._ret['monthDays'] = monthDays
-        _LOGGER.debug(f'월일수: {monthDays}')
+        self._ret['checkMonth'] = lastday.month
+        self._ret['monthDays'] = lastday.day
+        if (checkDay_tmp == 0): # 말일미면, 말일로 셋팅
+            self._ret['checkDay'] = lastday.day
+        _LOGGER.debug(f"월일수:{lastday.day} ({lastday.month}월)")
+        # _LOGGER.debug(f'월일수: {monthDays}')
 
 
     # 월별 동계, 하계 일수 구하기
+    # checkDay = 시작일
     def calc_lengthUseDays(self) :
         checkDay = self._ret['checkDay']
-        today = int(self._ret['today'].strftime('%m%d'))
+        checkMonth = self._ret['checkMonth']
+        monthDays = self._ret['monthDays']
+        # today = int(self._ret['today'].strftime('%m%d'))
+        today = int(self._ret['today'].strftime('%d'))
         etc = 0
         winter = 0
         summer = 0
-        # 하계(7~8월), 사용 일수 계산
-        if (today > checkDay + 600) and (today <= checkDay + 900) :
-            _LOGGER.debug('하계(7~8월), 사용 일수 계산')
+        moons = {
+            checkMonth : monthDays - checkDay +1,
+            checkMonth+1 : checkDay -1
+        }
+        for moon, moonleng in moons.items():
+            if moon in [7,8] :
+                summer += moonleng
+            elif moon in [12,1,2] :
+                winter += moonleng
+            else :
+                etc += moonleng
+
+        if checkMonth in [7,8] :
             season = 'summer'
-            if checkDay == 0: # 검침일이 말일일때
-                _LOGGER.debug('  검침일이 말일일때')
-                lastday = self.last_day_of_month(self._ret['today'])
-                if lastday.month in [6,9] : # 6,9월일때
-                    season = 'etc'
-                    etc = lastday.day
-                else : # 7,8월일때
-                    summer = lastday.day
-            elif today <= checkDay + 700 : # 검침일이 7월일때 
-                _LOGGER.debug('  검침일이 7월일때 ')
-                etc = 30 - checkDay
-                summer = checkDay
-            elif today <= checkDay + 800 : # 검침일이 8월일때 
-                _LOGGER.debug('  검침일이 8월일때 ') 
-                etc = 0
-                summer = 31
-            else : # 검침일이 9월일때 
-                _LOGGER.debug('  검침일이 9월일때 ')
-                etc = checkDay
-                summer = 31 - checkDay
-        # 동계(12~2월), 사용 일수 계산
-        elif (today > checkDay + 1100) or (today <= checkDay + 300) :
-            _LOGGER.debug('동계(12~2월), 사용 일수 계산')
+        elif checkMonth in [12,1,2] :
             season = 'winter'
-            if checkDay == 0: # 검침일이 말일일때
-                _LOGGER.debug('  검침일이 말일일때')
-                lastday = self.last_day_of_month(self._ret['today'])
-                if lastday.month in [3,11] : # 3,11월일때
-                    season = 'etc'
-                    etc = lastday.day
-                else : # 7,8월일때
-                    winter = lastday.day
-            elif today > checkDay + 1100 and today <= checkDay + 1200 : # 검침월이 11월일때 
-                _LOGGER.debug('# 검침월이 11월일때')
-                etc = 30 - checkDay
-                winter = checkDay
-            elif today > checkDay + 200 and today <= checkDay + 300 : # 검침월이 2월일때 
-                # 210 > 28 + 100 and 210 <= 28 + 300
-                _LOGGER.debug('# 검침일이 2월일때')
-                lastday = self.last_day_of_month(self._ret['today'].replace(month=2,day=1))
-                etc = checkDay
-                winter = lastday.day - checkDay
-            else : # 검침일이 12,1월일때
-                _LOGGER.debug(f'{today} # 검침일이 12,1월일때 ')
-                etc = 0
-                winter = 31
-        else : # 기타
-            _LOGGER.debug('기타 시즌')
+        else :
             season = 'etc'
-            etc = self._ret['monthDays']
 
         self._ret['season'] = season
         self._ret['etc']['useDays'] = etc
         self._ret['winter']['useDays'] = winter
         self._ret['summer']['useDays'] = summer
-        _LOGGER.debug(f'  시즌일수: 기타 {etc}, 동계 {winter}, 하계 {summer}, 계산시즌: {season}')
+
+        _LOGGER.debug(f'검침월:{checkMonth} , 검침일:{checkDay}')
+        _LOGGER.debug(f"시즌일수: 기타 {etc}, 동계 {winter}, 하계 {summer}, 현시즌:{season} ")
 
 
     # 전기요금 계산(주거용)

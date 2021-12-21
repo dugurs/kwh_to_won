@@ -291,6 +291,7 @@ class ExtendSensor(SensorBase):
         """Update the state."""
         
         if self._sensor_type == "forecast":
+            self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
             forcest = self.KWH2WON.energy_forecast(self._energy)
             self._state = forcest['forcest']
             self._extra_state_attributes['사용량'] = self._energy
@@ -304,6 +305,7 @@ class ExtendSensor(SensorBase):
                 ret = self.KWH2WON.kwh2won(self._energy)
                 self._extra_state_attributes['사용량'] = self._energy
             else:
+                self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                 forcest = self.KWH2WON.energy_forecast(self._energy)
                 ret = self.KWH2WON.kwh2won(forcest['forcest'])
                 self._extra_state_attributes['사용량'] = self._energy
