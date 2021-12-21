@@ -201,8 +201,8 @@ class ExtendSensor(SensorBase):
         self._icon = SENSOR_TYPES[sensor_type][3]
         self._extra_state_attributes['state_class'] = SENSOR_TYPES[sensor_type][4]
         self._prev_energy = 0
-        # if SENSOR_TYPES[sensor_type][4] == 'measurement' :
-        #     self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+        if self._sensor_type == "forecast":
+            self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
 
         self._energy_entity = energy_entity # energy 엔터티
         self._energy = None
