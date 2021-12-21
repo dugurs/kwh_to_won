@@ -1,19 +1,22 @@
 # kwh2won
 
-전기요금 계산기
+## 전기요금 계산기
 - 전기 사용량을 사용요금으로 계산
 - 가정용저압, 고압 지원
 - 대가족할인 및 복지할인 계산 지원
 
-한전 전기요금 계산기 (개편전 단가임!!)
-- (https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp)
+<br>
+
+## 한전 전기요금 계산기 (개편전 단가임!!)
+- https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp
+
+<br>
 
 ## 스크린샷
 ![screen1-1.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-1.jpg)
 ![screen1-2.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-2.jpg)
 ![screen1-3.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-3.jpg)
 ![screen1-4.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-4.jpg)
-
 
 <br>
 
@@ -28,6 +31,8 @@
 | v0.0.6  | 2021.12.18  | 구성옵션 추가 (재시작시반영), 마그레이션 버전을 고정 |
 | v1.0.0  | 2021.12.20  | 계산식 수정, 슈퍼사용자요금 추가, 복지할인 하계 구분 |
 | v1.1.0  | 2021.12.21  | 검침일을 검침시작일로, 센서의 속성지정 |
+| v1.1.1  | 2021.12.22  | 월이 바뀌었을때 월길이 계산 오류 수정 |
+
 <br>
 
 ## 설치
@@ -44,7 +49,6 @@
 <br>
 
 ## 보완 예정 사항
-[v] 하계 할인액 상이 반영 (https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00107.jsp)
 
 <br>
 
