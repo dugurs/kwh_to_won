@@ -157,8 +157,7 @@ class kwh2won_api:
     def calc_lengthDays(self) :
         today = self._ret['today']
         checkDay = self._ret['checkDay']
-        checkDay_tmp = checkDay
-        if (checkDay == 0): # 말일미면, 말일로 셋팅
+        if (checkDay == 0 or checkDay >= 28): # 말일미면, 말일로 다시 셋팅
             checkDay = self.last_day_of_month(today)
             checkDay = checkDay.day
         if today.day >= checkDay : # 오늘이 검침일보다 크면
@@ -167,7 +166,7 @@ class kwh2won_api:
             lastday = today - datetime.timedelta(days=today.day) # 전달의 마지막일이 전체 길이
         self._ret['checkMonth'] = lastday.month
         self._ret['monthDays'] = lastday.day
-        if (checkDay_tmp == 0): # 말일미면, 말일로 셋팅
+        if (checkDay >= 28): # 말일미면, 말일로 다시 셋팅
             self._ret['checkDay'] = lastday.day
         _LOGGER.debug(f"월일수:{lastday.day} ({lastday.month}월)")
         # _LOGGER.debug(f'월일수: {monthDays}')
