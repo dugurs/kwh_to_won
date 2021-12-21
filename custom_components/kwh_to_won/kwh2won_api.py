@@ -135,7 +135,12 @@ class kwh2won_api:
             lastday = NOW - datetime.timedelta(days=NOW.day)
             lastday = lastday.day
             useday = lastday + NOW.day - checkDay
-        return round(energy / (((useday - 1) * 24) + NOW.hour + 1) * (lastday * 24), 1)
+        return {
+            'forcest': round(energy / (((useday - 1) * 24) + NOW.hour + 1) * (lastday * 24), 1),
+            'lastday': lastday,
+            'useday': useday,
+            'checkDay': checkDay,
+        }
 
     # 달의 말일
     # last_day_of_month(datetime.date(2021, 12, 1))
@@ -450,6 +455,12 @@ class kwh2won_api:
         vat = math.floor(elecSumWon * 0.1) # 부가가치세
         baseFund = math.floor(elecSumWon * 0.037 /10)*10 # 전력산업기금
         total = math.floor((elecSumWon + vat + baseFund) /10)*10 # 청구금액
+        
+        if (total < 0) :
+            total = 0
+        # elif (energy == 0) : # 사용량이 0 이면 50% 할인
+        #     total = int(total/2)
+
         self._ret['elecSumWon'] = elecSumWon
         self._ret['vat'] = vat # 부가가치세
         self._ret['baseFund'] = baseFund # 전력산업기반기금
@@ -461,7 +472,7 @@ class kwh2won_api:
     def kwh2won(self, energy) :
         
         _LOGGER.debug(f'전기사용량 : {energy}')
-
+        energy = float(energy)
         if energy == 0 :
             self._ret['energy'] = 0.0001
         else :
