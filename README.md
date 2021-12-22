@@ -57,8 +57,8 @@
 <br>
 
 ## 사용
-### 월간 투적사용량 센서
-- 검침일에 맞줘 카운팅되는 월간누적사용량 센서가 있어야 합니다.
+### 월간 누적 사용량 센서
+- 검침일에 맞줘 카운팅되는 월간 누적 사용량 센서가 있어야 합니다.
 - 없다면 아래와같이 [`utility_meter`](https://www.home-assistant.io/integrations/utility_meter/)를 이용해 만들어줘야 합니다.
 ```
 utility_meter:
