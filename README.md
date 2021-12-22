@@ -13,7 +13,7 @@
 <br>
 
 ## 한전 전기요금 자료 링크
-- [한전 전기요금계산기](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp) - 개편전 단가로 계산!!
+- [한전 전기요금계산기](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp) (계산 단가 확인 필!!)
 - [전기요금표](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp)
 - [복지할인요금제](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00208.jsp), [대가족,생명유지장치요금제](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00209.jsp)
 - [연료비조정금액](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00210.jsp), [기후환경요금](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00211.jsp)
