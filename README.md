@@ -12,8 +12,11 @@
 
 <br>
 
-## 한전 전기요금 계산기 (개편전 단가임!!)
-- https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp
+## 한전 전기요금 자료 링크
+- [한전 전기요금계산기](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp) - 개편전 단가로 계산!!
+- [전기요금표](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp)
+- [복지할인요금제](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00208.jsp), [대가족,생명유지장치요금제](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00209.jsp)
+- [연료비조정금액](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00210.jsp), [기후환경요금](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00211.jsp)
 
 <br>
 
@@ -25,7 +28,7 @@
 
 <br>
 
-## Version history
+## 판올림
 | Version | Date        | 내용              |
 | :-----: | :---------: | ----------------------- |
 | v0.0.1  | 2021.12.13  | 템플릿센서 통합구서요소로 변경 |
@@ -41,20 +44,31 @@
 <br>
 
 ## 설치
-### Manual
+- 수동설치 또는 HACS를 이용해 설치를 할수 있습니다.
+### 수동
 - HA 설치 경로 아래 custom_components에 kwh_to_won폴더 안의 전체 파일을 복사해줍니다.<br>
   `<config directory>/custom_components/kwh_to_won/`<br>
-- configuration.yaml 파일에 설정을 추가합니다.<br>
 - Home-Assistant 를 재시작합니다<br>
 ### HACS
 - HACS > Integretions > 우측상단 메뉴 > Custom repositories 선택
-- 'https://github.com/dugurs/kwh_to_won' 주소 입력, Category에 'integration' 선택 후, 저장
-- HACS > Integretions 메뉴 선택 후, kwh_to_won 검색하여 설치
+- `https://github.com/dugurs/kwh_to_won` 주소 입력, Category에 'integration' 선택 후, 저장
+- HACS > Integretions 메뉴 선택 후, `kwh_to_won` 혹은 `전기요금 계산 센서` 검색하여 설치
 
 <br>
 
 ## 사용
-### Custom Integration
+### 월간 투적사용량 센서
+- 검침일에 맞줘 카운팅되는 월간누적사용량 센서가 있어야 합니다.
+- 없다면 아래와같이 [`utility_meter`](https://www.home-assistant.io/integrations/utility_meter/)를 이용해 만들어줘야 합니다.
+```
+utility_meter:
+  pzemac_energy_monthly:
+    source: sensor.pzemac_energy
+    cycle: monthly
+    offset:
+      days: 11
+```
+### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
 
 <br>
