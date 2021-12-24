@@ -130,5 +130,5 @@ def _supported_features(hass: HomeAssistant, sensor: str):
     state = hass.states.get(sensor)
     if '_kwhto_' in sensor:
         return False
-    return state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_KILO_WATT_HOUR and state.attributes.get(CONF_DEVICE_CLASS) == DEVICE_CLASS_ENERGY and state.attributes.get('state_class') == 'measurement'
+    return state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_KILO_WATT_HOUR and state.attributes.get(CONF_DEVICE_CLASS) == DEVICE_CLASS_ENERGY and state.attributes.get('state_class') == 'total_increasing'
     
