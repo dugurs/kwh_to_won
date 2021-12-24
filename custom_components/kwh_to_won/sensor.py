@@ -22,7 +22,7 @@ from .const import DOMAIN, VERSION, MANUFACTURER, MODEL
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
 from homeassistant.helpers.event import async_track_state_change
 
-from .kwh2won_api import NOW, kwh2won_api as K2WAPI
+from .kwh2won_api import kwh2won_api as K2WAPI
 import math
 import datetime
 
@@ -30,9 +30,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
-    'kwh2won': ['전기 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
-    'forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
-    'forecast_kwh2won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
+    'kwhto_won': ['전기 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
+    'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
+    'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
 }
 
 
@@ -201,26 +201,19 @@ class ExtendSensor(SensorBase):
         self._icon = SENSOR_TYPES[sensor_type][3]
         self._extra_state_attributes['state_class'] = SENSOR_TYPES[sensor_type][4]
         self._prev_energy = 0
-        if self._sensor_type == "forecast":
+        if self._sensor_type == "kwhto_forecast":
             self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
 
         self._energy_entity = energy_entity # energy 엔터티
         self._energy = None
-        # self._pressure = pressure_config # 저압고압
-        # self._checkday = checkday_config # 검침일
-        # self._bigfam_dc = bigfam_dc_config
-        # self._welfare_dc = welfare_dc_config
-        # self._total_charge = 0 # 최종금액
-        # self._prog_up = 0
-        # self._prog_down = 0
+
         cfg = {
-            'pressure' : pressure_config,
+            'pressure' : pressure_config, # 저압고압
             'checkDay' : checkday_config, # 검침일
-            'today': NOW, # 오늘
+            'today': datetime.datetime.now(), # 오늘
             'bigfamDcCfg' : bigfam_dc_config, # 대가족 요금할인
             'welfareDcCfg' : welfare_dc_config, # 복지 요금할인
         }
-        
         self.KWH2WON = K2WAPI(cfg)
 
         async_track_state_change(
@@ -289,41 +282,41 @@ class ExtendSensor(SensorBase):
 
     def update(self):
         """Update the state."""
-        
-        if self._sensor_type == "forecast":
-            self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
-            forcest = self.KWH2WON.energy_forecast(self._energy)
-            self._state = forcest['forcest']
-            self._extra_state_attributes['사용량'] = self._energy
-            self._extra_state_attributes['검침일'] = forcest['checkDay']
-            self._extra_state_attributes['사용일수'] = forcest['useday']
-            self._extra_state_attributes['남은일수'] = forcest['lastday'] - forcest['useday']
-            if self._energy < self._prev_energy :
-                self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
-        else :
-            if self._sensor_type == "kwh2won":
-                ret = self.KWH2WON.kwh2won(self._energy)
-                self._extra_state_attributes['사용량'] = self._energy
-            else:
+        if (self._energy != None) :
+            if self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
                 self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                 forcest = self.KWH2WON.energy_forecast(self._energy)
-                ret = self.KWH2WON.kwh2won(forcest['forcest'])
+                self._state = forcest['forcest']
                 self._extra_state_attributes['사용량'] = self._energy
-                self._extra_state_attributes['예상사용량'] = forcest['forcest']
+                self._extra_state_attributes['검침일'] = forcest['checkDay']
                 self._extra_state_attributes['사용일수'] = forcest['useday']
                 self._extra_state_attributes['남은일수'] = forcest['lastday'] - forcest['useday']
-            self._state = ret['total']
-            self._extra_state_attributes['검침일'] = ret['checkDay']
-            self._extra_state_attributes['사용용도'] = ret['pressure']
-            self._extra_state_attributes['대가족_할인'] = ret['bigfamDcCfg']
-            self._extra_state_attributes['복지_할인'] = ret['welfareDcCfg']
-            if ret['etc']['useDays'] > 0 :
-                self._extra_state_attributes['누진단계_기타'] = ret['etc']['kwhStep']
-            if ret['winter']['useDays'] > 0 :
-                self._extra_state_attributes['누진단계_동계'] = ret['winter']['kwhStep']
-            if ret['summer']['useDays'] > 0 :
-                self._extra_state_attributes['누진단계_하계'] = ret['summer']['kwhStep']
-        self._prev_energy = self._energy
+                if self._energy < self._prev_energy :
+                    self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+            else :
+                if self._sensor_type == "kwhto_won": # 전기 사용 요금
+                    ret = self.KWH2WON.kwh2won(self._energy)
+                    self._extra_state_attributes['사용량'] = self._energy
+                else: # 예상 전기 사용 요금
+                    self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
+                    forcest = self.KWH2WON.energy_forecast(self._energy)
+                    ret = self.KWH2WON.kwh2won(forcest['forcest'])
+                    self._extra_state_attributes['사용량'] = self._energy
+                    self._extra_state_attributes['예상사용량'] = forcest['forcest']
+                    self._extra_state_attributes['사용일수'] = forcest['useday']
+                    self._extra_state_attributes['남은일수'] = forcest['lastday'] - forcest['useday']
+                self._state = ret['total']
+                self._extra_state_attributes['검침일'] = ret['checkDay']
+                self._extra_state_attributes['사용용도'] = ret['pressure']
+                self._extra_state_attributes['대가족_할인'] = ret['bigfamDcCfg']
+                self._extra_state_attributes['복지_할인'] = ret['welfareDcCfg']
+                if ret['etc']['useDays'] > 0 :
+                    self._extra_state_attributes['누진단계_기타'] = ret['etc']['kwhStep']
+                if ret['winter']['useDays'] > 0 :
+                    self._extra_state_attributes['누진단계_동계'] = ret['winter']['kwhStep']
+                if ret['summer']['useDays'] > 0 :
+                    self._extra_state_attributes['누진단계_하계'] = ret['summer']['kwhStep']
+            self._prev_energy = self._energy
 
     async def async_update(self):
         """Update the state."""
