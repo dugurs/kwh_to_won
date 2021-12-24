@@ -73,7 +73,7 @@ utility_meter:
 ### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `device_class: energy`, `state_class: measurement`, `unit_of_measurement: kWh`
+  - `device_class: energy`, `state_class: total_increasing`, `unit_of_measurement: kWh`
 
 ### 생성되는 센서
 - 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
