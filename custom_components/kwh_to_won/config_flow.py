@@ -1,7 +1,7 @@
 """Config flow for Damda Weather integration."""
 from __future__ import annotations
 from urllib.parse import quote_plus, unquote
-from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_NAME, CONF_DEVICE_CLASS, DEVICE_CLASS_ENERGY, ATTR_UNIT_OF_MEASUREMENT, ENERGY_KILO_WATT_HOUR
 import voluptuous as vol
 from homeassistant.core import callback
 
@@ -9,18 +9,17 @@ from homeassistant import config_entries
 
 from .const import DOMAIN, BIGFAM_DC_OPTION, WELFARE_DC_OPTION, PRESSURE_OPTION
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required('device_name', default="Home"): str,
-        vol.Required('energy_entity'): str,
-        vol.Required("checkday_config", default=0): int,
-        vol.Required("pressure_config", default="low"): vol.In(PRESSURE_OPTION),
-        vol.Required("bigfam_dc_config", default=0): vol.In(BIGFAM_DC_OPTION),
-        vol.Required("welfare_dc_config", default=0): vol.In(WELFARE_DC_OPTION)
-    }
-)
+# import logging
+# _LOGGER = logging.getLogger(__name__)
 
-
+DATA_LIST = [
+    ('device_name', "", str),
+    ('energy_entity','', str),
+    ("checkday_config", 0, int),
+    ("pressure_config", "low", vol.In(PRESSURE_OPTION)),
+    ("bigfam_dc_config", 0, vol.In(BIGFAM_DC_OPTION)),
+    ("welfare_dc_config", 0, vol.In(WELFARE_DC_OPTION))
+]
 OPTION_LIST = [
     ("energy_entity", "", str),
     ("checkday_config", "0", int),
@@ -31,7 +30,7 @@ OPTION_LIST = [
 
 def make_unique(i):
     """Make unique_id."""
-    return f"{i['energy_entity']}_{i['checkday_config']}_{i['pressure_config']}_{i['bigfam_dc_config']}_{i['welfare_dc_config']}"
+    return f"{i['device_name']}_{i['energy_entity']}_{i['checkday_config']}_{i['pressure_config']}_{i['bigfam_dc_config']}_{i['welfare_dc_config']}"
 
 
 def check_key(i):
@@ -46,7 +45,7 @@ def check_key(i):
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Damda Weather."""
 
-    VERSION = "0.0.5"
+    VERSION = 1
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -58,10 +57,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
             return self.async_create_entry(title=user_input['device_name'], data=user_input)
 
+        kwh_sensor = _kwh_energy_sensors(self.hass)
+        if len(kwh_sensor) == 0:
+            errors['energy_entity'] = 'entity_not_found'
+        to_replace = {'energy_entity': vol.In(sorted(kwh_sensor))}
+
+        data_schema = {}
+        for name, default, validation in DATA_LIST:
+            key = (
+                vol.Required(name, default=default)
+            )
+            value = to_replace.get(name, validation)
+            data_schema[key] = value
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
-            errors=errors,
+            data_schema=vol.Schema(data_schema),
+            errors=errors
         )
 
     @staticmethod
@@ -80,22 +91,44 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Handle options flow."""
+        errors = {}
+
         conf = self.config_entry
         if conf.source == config_entries.SOURCE_IMPORT:
             return self.async_show_form(step_id="init", data_schema=None)
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        kwh_sensor = _kwh_energy_sensors(self.hass)
+        if len(kwh_sensor) == 0:
+            errors['energy_entity'] = 'entity_not_found'
+        to_replace = {'energy_entity': vol.In(sorted(kwh_sensor))}
+
         options_schema = {}
-        data_list = ['energy_entity', 'checkday_config', 'pressure_config', 'bigfam_dc_config', 'welfare_dc_config']
         for name, default, validation in OPTION_LIST:
-            to_default = conf.options.get(name, default)
-            if name in data_list and conf.options.get(name, default) == default:
-                to_default = conf.data.get(name, default)
+            to_default = conf.options.get(name, conf.data.get(name, default))
             key = (
                 vol.Required(name, default=to_default)
             )
-            options_schema[key] = validation
+            value = to_replace.get(name, validation)
+            options_schema[key] = value
         return self.async_show_form(
-            step_id="init", data_schema=vol.Schema(options_schema)
+            step_id="init",
+            data_schema=vol.Schema(options_schema),
+            errors=errors
         )
+
+def _kwh_energy_sensors(hass: HomeAssistant):
+    kwh_sensor = [
+        senosr
+        for senosr in hass.states.async_entity_ids("sensor")
+        if _supported_features(hass, senosr)
+    ]
+    return kwh_sensor if len(kwh_sensor) else []
+
+def _supported_features(hass: HomeAssistant, sensor: str):
+    state = hass.states.get(sensor)
+    if '_kwhto_' in sensor:
+        return False
+    return state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_KILO_WATT_HOUR and state.attributes.get(CONF_DEVICE_CLASS) == DEVICE_CLASS_ENERGY and state.attributes.get('state_class') == 'measurement'
+    
