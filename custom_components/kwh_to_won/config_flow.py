@@ -118,6 +118,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             errors=errors
         )
 
+    
 def _kwh_energy_sensors(hass: HomeAssistant):
     kwh_sensor = [
         senosr
