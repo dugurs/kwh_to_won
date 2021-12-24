@@ -21,6 +21,7 @@
 <br>
 
 ## 스크린샷
+![screen1-0.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-0.jpg)
 ![screen1-1.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-1.jpg)
 ![screen1-2.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-2.jpg)
 ![screen1-3.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-3.jpg)
@@ -40,6 +41,7 @@
 | v1.0.0  | 2021.12.20  | 계산식 수정, 슈퍼사용자요금 추가, 복지할인 하계 구분 |
 | v1.1.0  | 2021.12.21  | 검침일을 검침시작일로, 센서의 속성지정 |
 | v1.1.1  | 2021.12.22  | 월이 바뀌었을때 월길이 계산 오류 수정 |
+| v1.1.2  | 2021.12.24  | 센서 입력에서 센서 선택으로 수정, entitiy_id 접미사 변경으로 마그래이션 불가 (지우고, 다시 등록필요) |
 
 <br>
 
@@ -70,6 +72,8 @@ utility_meter:
 ```
 ### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
+- 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
+  - `device_class: energy`, `state_class: measurement`, `unit_of_measurement: kWh`
 
 <br>
 
