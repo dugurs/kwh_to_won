@@ -3,7 +3,6 @@ import datetime
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-
 # # 로그의 출력 기준 설정
 # _LOGGER.setLevel(logging.DEBUG)
 # # log 출력 형식
@@ -12,9 +11,6 @@ _LOGGER = logging.getLogger(__name__)
 # stream_handler = logging.StreamHandler()
 # stream_handler.setFormatter(formatter)
 # _LOGGER.addHandler(stream_handler)
-
-
-NOW = datetime.datetime.now()
 
 CALC_PARAMETER = {
     'low': {
@@ -71,7 +67,7 @@ class kwh2won_api:
             'pressure' : 'low',
             'checkDay' : 0, # 검침일
             # 'today' : datetime.datetime(2022,7,10, 1,0,0), # 오늘
-            'today': NOW,
+            'today': datetime.datetime.now(),
             'bigfamDcCfg' : 0, # 대가족 요금할인
             'welfareDcCfg' : 0, # 복지 요금할인
             'checkMonth':0, # 검침월
@@ -137,7 +133,7 @@ class kwh2won_api:
             lastday = lastday.day
             useday = lastday + today.day - checkDay +1
         forcest = round(energy / (((useday - 1) * 24) + today.hour + 1) * (lastday * 24), 1)
-        _LOGGER.debug(f"예상사용량:{forcest}, 월길이 {lastday}, 사용일 {useday}, 검침일 {checkDay}, 오늘 {today.day}")
+        _LOGGER.debug(f"########### 예상사용량:{forcest}, 월길이 {lastday}, 사용일 {useday}, 검침일 {checkDay}, 오늘 {today.day}")
         return {
             'forcest': forcest,
             'lastday': lastday,
@@ -168,7 +164,7 @@ class kwh2won_api:
         self._ret['monthDays'] = lastday.day
         if (checkDay >= 28): # 말일미면, 말일로 다시 셋팅
             self._ret['checkDay'] = lastday.day
-        _LOGGER.debug(f"월일수:{lastday.day} ({lastday.month}월)")
+        _LOGGER.debug(f"## 월일수:{lastday.day}, ({lastday.month}월), 검침일{self._ret['checkDay']}")
         # _LOGGER.debug(f'월일수: {monthDays}')
 
 
@@ -450,7 +446,7 @@ class kwh2won_api:
 
     def kwh2won(self, energy) :
         
-        _LOGGER.debug(f'전기사용량 : {energy}')
+        _LOGGER.debug(f'########### 전기사용량 : {energy}')
         energy = float(energy)
         if energy == 0 :
             self._ret['energy'] = 0.0001
@@ -482,15 +478,17 @@ class kwh2won_api:
 
 
 # cfg = {
-#     'pressure' : 'low',
-#     'checkDay' : 0, # 검침일
-#     'today' : datetime.datetime(2021,12,22, 1,0,0), # 오늘
-#     # 'today': NOW,
-#     'bigfamDcCfg' : 0, # 대가족 요금할인
-#     'welfareDcCfg' : 0, # 복지 요금할인
+#     'pressure' : 'high',
+#     'checkDay' : 11, # 검침일
+#     # 'today' : datetime.datetime(2021,12,22, 1,0,0), # 오늘
+#     'today': datetime.datetime.now(),
+#     'bigfamDcCfg' : 1, # 대가족 요금할인
+#     'welfareDcCfg' : 1, # 복지 요금할인
 # }
 
 # K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(1100)
+# ret = K2W.kwh2won(17)
+# K2W.calc_lengthDays()
+# forc = K2W.energy_forecast(17)
 # # import pprint
 # # pprint.pprint(ret)
