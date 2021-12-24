@@ -21,7 +21,7 @@
 <br>
 
 ## 스크린샷
-![screen1-1.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-1.jpg)
+![screen1-1.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-1.jpg)<br>
 ![screen1-0.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-0.jpg)
 ![screen1-2.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-2.jpg)
 ![screen1-3.jpg](https://raw.githubusercontent.com/dugurs/kwh_to_won/main/images/screen1-3.jpg)
