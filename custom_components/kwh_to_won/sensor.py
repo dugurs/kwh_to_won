@@ -284,29 +284,28 @@ class ExtendSensor(SensorBase):
         """Update the state."""
         if (self._energy != None) :
             if self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
-                self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
+                # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                 forcest = self.KWH2WON.energy_forecast(self._energy)
                 self._state = forcest['forcest']
                 self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침일'] = forcest['checkDay']
-                self._extra_state_attributes['사용일수'] = forcest['useday']
-                self._extra_state_attributes['남은일수'] = forcest['lastday'] - forcest['useday']
+                self._extra_state_attributes['사용일수'] = forcest['useDays']
+                self._extra_state_attributes['남은일수'] = forcest['monthDays'] - forcest['useDays']
                 if self._energy < self._prev_energy :
                     self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
             else :
                 if self._sensor_type == "kwhto_won": # 전기 사용 요금
                     ret = self.KWH2WON.kwh2won(self._energy)
-                    self._extra_state_attributes['사용량'] = self._energy
                 else: # 예상 전기 사용 요금
-                    self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
+                    # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                     forcest = self.KWH2WON.energy_forecast(self._energy)
                     ret = self.KWH2WON.kwh2won(forcest['forcest'])
-                    self._extra_state_attributes['사용량'] = self._energy
                     self._extra_state_attributes['예상사용량'] = forcest['forcest']
-                    self._extra_state_attributes['사용일수'] = forcest['useday']
-                    self._extra_state_attributes['남은일수'] = forcest['lastday'] - forcest['useday']
                 self._state = ret['total']
+                self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침일'] = ret['checkDay']
+                self._extra_state_attributes['사용일수'] = ret['useDays']
+                self._extra_state_attributes['남은일수'] = ret['monthDays'] - ret['useDays']
                 self._extra_state_attributes['사용용도'] = ret['pressure']
                 self._extra_state_attributes['대가족_할인'] = ret['bigfamDcCfg']
                 self._extra_state_attributes['복지_할인'] = ret['welfareDcCfg']
