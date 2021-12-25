@@ -9,7 +9,7 @@
                 "data": {
                     "device_name": "생성할 기기의 이름을 입력하세요",
                     "energy_entity": "월간 전기 사용량 센서를 선택하세요",
-                    "checkday_config": "검침일을 입력하세요. (말일은 0)",
+                    "checkday_config": "검침일을 선택하세요",
                     "pressure_config": "사용용도를 선택하세요",
                     "bigfam_dc_config": "할인 해당사항을 선택하세요 (대가족)",
                     "welfare_dc_config": "할인 해당사항을 선택하세요 (복지)"
@@ -31,7 +31,7 @@
                 "title": "전기요금 계산 옵션",
                 "data": {
                     "energy_entity": "월간 전기 사용량 센서를 선택하세요",
-                    "checkday_config": "검침일을 입력하세요. (말일은 0)",
+                    "checkday_config": "검침일을 선택하세요",
                     "pressure_config": "사용용도를 선택하세요",
                     "bigfam_dc_config": "할인 해당사항을 선택하세요 (대가족)",
                     "welfare_dc_config": "할인 해당사항을 선택하세요 (복지)"

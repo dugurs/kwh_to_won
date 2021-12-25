@@ -7,7 +7,7 @@ from homeassistant.core import callback
 
 from homeassistant import config_entries
 
-from .const import DOMAIN, BIGFAM_DC_OPTION, WELFARE_DC_OPTION, PRESSURE_OPTION
+from .const import DOMAIN, CHECKDAY_OPTION, BIGFAM_DC_OPTION, WELFARE_DC_OPTION, PRESSURE_OPTION
 
 # import logging
 # _LOGGER = logging.getLogger(__name__)
@@ -15,14 +15,14 @@ from .const import DOMAIN, BIGFAM_DC_OPTION, WELFARE_DC_OPTION, PRESSURE_OPTION
 DATA_LIST = [
     ('device_name', "", str),
     ('energy_entity','', str),
-    ("checkday_config", 0, int),
+    ("checkday_config", 1, vol.In(CHECKDAY_OPTION)),
     ("pressure_config", "low", vol.In(PRESSURE_OPTION)),
     ("bigfam_dc_config", 0, vol.In(BIGFAM_DC_OPTION)),
     ("welfare_dc_config", 0, vol.In(WELFARE_DC_OPTION))
 ]
 OPTION_LIST = [
     ("energy_entity", "", str),
-    ("checkday_config", "0", int),
+    ("checkday_config", 1, vol.In(CHECKDAY_OPTION)),
     ("pressure_config", "low", vol.In(PRESSURE_OPTION)),
     ("bigfam_dc_config", "0", vol.In(BIGFAM_DC_OPTION)),
     ("welfare_dc_config", "0", vol.In(WELFARE_DC_OPTION))
@@ -118,6 +118,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             errors=errors
         )
 
+    
 def _kwh_energy_sensors(hass: HomeAssistant):
     kwh_sensor = [
         senosr

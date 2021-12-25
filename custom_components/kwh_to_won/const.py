@@ -3,7 +3,7 @@
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "1.1.2"
+VERSION = "1.1.4"
 MODEL = "kwh2won"
 MANUFACTURER = "전기요금계산"
 
@@ -24,4 +24,27 @@ WELFARE_DC_OPTION = {
     3:'기초생활(생계.의료)',
     4:'기초생활(주거.교육)',
     5:'차사위계층'
+}
+CHECKDAY_OPTION = {
+    1:"1",
+    2:"2",
+    3:"3",
+    4:"4",
+    5:"5",
+    8:"8",
+    9:"9",
+    10:"10",
+    11:"11",
+    12:"12",
+    15:"15",
+    16:"16",
+    17:"17",
+    18:"18",
+    19:"19",
+    22:"22",
+    23:"23",
+    24:"24",
+    25:"25",
+    26:"26",
+    0:"말일"
 }
