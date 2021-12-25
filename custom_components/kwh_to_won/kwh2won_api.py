@@ -239,7 +239,7 @@ class kwh2won_api:
             for stepkwh in kwhSection:
                 if (restEnergy <= 0) : 
                     break
-                elif (energy > stepkwh) :
+                elif (restEnergy > stepkwh) :
                     stepEnergy = stepkwh - kwhStepSum
                     restEnergy = energy - stepkwh
                 else :
