@@ -238,7 +238,7 @@ class kwh2won_api:
             for stepkwh in kwhSection:
                 if (restEnergy <= 0) : 
                     break
-                elif (restEnergy > stepkwh) :
+                elif (energy > stepkwh) :
                     stepEnergy = stepkwh - kwhStepSum
                     restEnergy = energy - stepkwh
                 else :
@@ -248,7 +248,7 @@ class kwh2won_api:
                 kwhStepSum += stepEnergy
                 kwhWon = round(round(stepEnergy * seasonDays / monthDays) * kwhPrice[kwhStep-1],1) # 구간 요금 계산
                 kwhWonSum += kwhWon
-                _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy}, 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{round(stepEnergy*seasonDays/monthDays)}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
+                _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{round(stepEnergy*seasonDays/monthDays)}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
             basicWon = math.floor(basicPrice[kwhStep-1] * seasonDays / monthDays)
             basicWonSum += basicWon
             self._ret[season]['basicWon'] = basicWon
