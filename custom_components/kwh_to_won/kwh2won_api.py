@@ -233,33 +233,37 @@ class kwh2won_api:
             diffWon = 0 # 환경비용차감(원미만적사)
             seasonEnergy = energy * seasonDays / monthDays
             _LOGGER.debug(f"  시즌:{season}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)} ")
-            kwhStepSum = 0
-            restEnergy = energy
+            restEnergy = energy # 계산하고 남은 
+            kwhWonSeason = 0 # 시즌전력량요금
+            stepEnergyCalcSum = 0 # 구간 사용량 합계
             for stepkwh in kwhSection:
                 if (restEnergy <= 0) : 
                     break
-                elif (energy > stepkwh) :
-                    stepEnergy = stepkwh - kwhStepSum
-                    restEnergy = energy - stepkwh
-                else :
+                elif (energy > stepkwh) : # 다음 구간이 남아 있으면
+                    stepEnergy = stepkwh - (energy - restEnergy) # 계산될 현단계 energy
+                    restEnergy = energy - stepkwh # # 계산하고 남은 
+                    stepEnergyCalc = round(stepEnergy / monthDays * seasonDays) # 구간 사용량 계산
+                else : # 마지막 구간
                     stepEnergy = restEnergy
                     restEnergy = 0
+                    stepEnergyCalc = round(energy / monthDays * seasonDays) - stepEnergyCalcSum # 구간 사용량 계산
                 kwhStep += 1 # 누진 단계
-                kwhStepSum += stepEnergy
-                kwhWon = round(round(stepEnergy * seasonDays / monthDays) * kwhPrice[kwhStep-1],1) # 구간 요금 계산
+                stepEnergyCalcSum += stepEnergyCalc
+                kwhWon = round(stepEnergyCalc * kwhPrice[kwhStep-1],1) # 구간 요금 계산
+                kwhWonSeason += kwhWon
                 kwhWonSum += kwhWon
-                _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{round(stepEnergy*seasonDays/monthDays)}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
-            basicWon = math.floor(basicPrice[kwhStep-1] * seasonDays / monthDays)
+                _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{stepEnergyCalc}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
+            basicWon = basicPrice[kwhStep-1] * seasonDays / monthDays
             basicWonSum += basicWon
-            self._ret[season]['basicWon'] = basicWon
+            self._ret[season]['basicWon'] = round(basicWon)
             self._ret[season]['kwhWon'] = kwhWonSum
             self._ret[season]['kwhStep'] = kwhStep
-            _LOGGER.debug(f"    시즌기본요금:{math.floor(basicWon)}원, 시즌전력량요금:{kwhWonSum}원")
+            _LOGGER.debug(f"    시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원")
         basicWonSum = math.floor(basicWonSum) # 기본요금합
         diffWon = energy * diffPrice # 환경비용차감
         kwhWon = math.floor(kwhWonSum + diffWon) # 전력량요금
         self._ret['kwhWon'] = kwhWon
-        self._ret['basicWon'] = basicWonSum
+        self._ret['basicWon'] = round(basicWonSum)
         self._ret['diffWon'] = diffWon
         _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{diffWon}원 = 사용량:{energy}kWh * 환경비요차감단가:{diffPrice}원")
         _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} + 환경비용차감:{diffWon}")
@@ -425,7 +429,7 @@ class kwh2won_api:
         welfareDc = self._ret['welfareDc']  # 복지 요금할인
         # 전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액)
         elecSumWon = basicWon + kwhWon - elecBasicDc + climateWon + fuelWon - elecBasic200Dc - bigfamDc - welfareDc # 전기요금계
-        vat = math.floor(elecSumWon * 0.1) # 부가가치세
+        vat = round(elecSumWon * 0.1) # 부가가치세
         baseFund = math.floor(elecSumWon * 0.037 /10)*10 # 전력산업기금
         total = math.floor((elecSumWon + vat + baseFund) /10)*10 # 청구금액
         
@@ -439,7 +443,9 @@ class kwh2won_api:
         self._ret['baseFund'] = baseFund # 전력산업기반기금
         self._ret['total'] = total # 청구금액
         _LOGGER.debug(f"전기요금계{elecSumWon} = 기본요금{basicWon} + 전력량요금{kwhWon} - 필수사용량 보장공제{elecBasicDc} + 기후환경요금{climateWon} + 연료비조정액{fuelWon} - 200kWh이하 감액{elecBasic200Dc} - 대가족할인{bigfamDc} - 복지할인{welfareDc}")
-        _LOGGER.debug(f"청구금액:{total}원 = (전기요금계{elecSumWon} + 부가가치세{vat} + 전력산업기반기금{baseFund})")
+        _LOGGER.debug(f"부가가치세(반올림):{vat}원 = 전기요금계{elecSumWon} * 0.1")
+        _LOGGER.debug(f"전력산업기반기금(10원미만절사):{baseFund}원 = 전기요금계{elecSumWon} * 0.037")
+        _LOGGER.debug(f"청구금액(10원미만절사):{total}원 = (전기요금계{elecSumWon} + 부가가치세{vat} + 전력산업기반기금{baseFund})")
 
 
     def kwh2won(self, energy) :
