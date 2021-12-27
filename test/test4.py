@@ -3,7 +3,6 @@ import datetime
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-
 # 로그의 출력 기준 설정
 _LOGGER.setLevel(logging.DEBUG)
 # log 출력 형식
@@ -13,14 +12,10 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 _LOGGER.addHandler(stream_handler)
 
-
-NOW = datetime.datetime.now()
-
 CALC_PARAMETER = {
     'low': {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
-        'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh)
-        # 'kwhPrice' : [93.3, 187.9, 280.6, 709.5],   # 전력량 요금(원/kWh) - 개편전 요금
+        'kwhPrice' : [93.3, 187.9, 280.6, 709.5],   # 전력량 요금(원/kWh) - (환경비용차감을 반영하지 않은 단가)
         'kwhSection': {
             'etc' : [200, 400, 10000],    # 구간(kWh - 기타)
             'winter' : [200, 400, 1000, 10000],    # 구간(kWh - 동계)
@@ -32,7 +27,7 @@ CALC_PARAMETER = {
     },
     'high': {
         'basicPrice' : [730, 1260, 6060, 6060],  # 기본요금(원/호)
-        'kwhPrice' : [73.3, 142.3, 210.6, 569.6], # 전력량 요금(원/kWh)
+        'kwhPrice' : [78.3, 147.3, 215.6, 574.6], # 전력량 요금(원/kWh) - (환경비용차감을 반영하지 않은 단가)
         'kwhSection': {
             'etc' : [200, 400, 10000],   # 구간(kWh - 기타)
             'winter' : [200, 400, 1000, 10000],   # 구간(kWh - 동계)
@@ -71,18 +66,19 @@ class kwh2won_api:
             'pressure' : 'low',
             'checkDay' : 0, # 검침일
             # 'today' : datetime.datetime(2022,7,10, 1,0,0), # 오늘
-            'today': NOW,
+            'today': datetime.datetime.now(),
             'bigfamDcCfg' : 0, # 대가족 요금할인
             'welfareDcCfg' : 0, # 복지 요금할인
-            'checkMonth': 0, # 검침월
+            'checkMonth':0, # 검침월
             'monthDays': 0, # 월일수
+            'useDays': 0, # 사용일수
             'season': 'winter',
             'etc' : {
                 'energy': 0,     # 사용량
                 'basicWon': 0,   # 기본요금
                 'kwhWon': 0,     # 전력량요금
                 'diffWon': 0,    # 환경비용차감
-                'useDays': 0,    # 월사용일
+                'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
             },
             'winter' : {
@@ -90,7 +86,7 @@ class kwh2won_api:
                 'basicWon': 0,   # 기본요금
                 'kwhWon': 0,     # 전력량요금
                 'diffWon': 0,    # 환경비용차감
-                'useDays': 0,    # 월사용일
+                'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
             },
             'summer' : {
@@ -98,7 +94,7 @@ class kwh2won_api:
                 'basicWon': 0,   # 기본요금
                 'kwhWon': 0,     # 전력량요금
                 'diffWon': 0,    # 환경비용차감
-                'useDays': 0,    # 월사용일
+                'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
             },
             'basicWon': 0,   # 기본요금
@@ -125,23 +121,18 @@ class kwh2won_api:
     # 시간곱하기 = 월일수*24
     # 예측 = 에너지 / 시간나누기 * 시간곱하기
     def energy_forecast(self, energy):
-        # energy = self._ret['energy']
+        self.calc_lengthDays() # 사용일 구하기 호출
         today = self._ret['today']
         checkDay = self._ret['checkDay']
-        if today.day >= checkDay :
-            lastday = self.last_day_of_month(today)
-            lastday = lastday.day
-            useday = today.day - checkDay +1
-        else :
-            lastday = today - datetime.timedelta(days=today.day)
-            lastday = lastday.day
-            useday = lastday + today.day - checkDay +1
-        forcest = round(energy / (((useday - 1) * 24) + today.hour + 1) * (lastday * 24), 1)
-        _LOGGER.debug(f"예상사용량:{forcest}, 월길이 {lastday}, 사용일 {useday}, 검침일 {checkDay}, 오늘 {today.day}")
+        useDays = self._ret['useDays']
+        monthDays = self._ret['monthDays']
+
+        forcest = round(energy / (((useDays - 1) * 24) + today.hour + 1) * (monthDays * 24), 1)
+        _LOGGER.debug(f"########### 예상사용량:{forcest}, 월길이 {monthDays}, 사용일 {useDays}, 검침일 {checkDay}, 오늘 {today.day}")
         return {
             'forcest': forcest,
-            'lastday': lastday,
-            'useday': useday,
+            'monthDays': monthDays,
+            'useDays': useDays,
             'checkDay': checkDay,
             'today': today.day,
         }
@@ -162,13 +153,16 @@ class kwh2won_api:
             checkDay = checkDay.day
         if today.day >= checkDay : # 오늘이 검침일보다 크면
             lastday = self.last_day_of_month(today) # 달의 마지막일이 전체 길이
+            useDays = today.day - checkDay +1
         else : # 오늘이 검칠일보다 작으면
             lastday = today - datetime.timedelta(days=today.day) # 전달의 마지막일이 전체 길이
+            useDays = lastday.day + today.day - checkDay +1
         self._ret['checkMonth'] = lastday.month
         self._ret['monthDays'] = lastday.day
+        self._ret['useDays'] = useDays
         if (checkDay >= 28): # 말일미면, 말일로 다시 셋팅
             self._ret['checkDay'] = lastday.day
-        _LOGGER.debug(f"월일수:{lastday.day} ({lastday.month}월)")
+        _LOGGER.debug(f"## 월일수:{lastday.day}, ({lastday.month}월), 사용일{useDays} 검침일{self._ret['checkDay']}")
         # _LOGGER.debug(f'월일수: {monthDays}')
 
 
@@ -254,7 +248,7 @@ class kwh2won_api:
                 kwhStepSum += stepEnergy
                 kwhWon = round(round(stepEnergy * seasonDays / monthDays) * kwhPrice[kwhStep-1],1) # 구간 요금 계산
                 kwhWonSum += kwhWon
-                _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy}, 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{round(stepEnergy*seasonDays/monthDays)}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
+                _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{round(stepEnergy*seasonDays/monthDays)}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
             basicWon = math.floor(basicPrice[kwhStep-1] * seasonDays / monthDays)
             basicWonSum += basicWon
             self._ret[season]['basicWon'] = basicWon
@@ -450,7 +444,7 @@ class kwh2won_api:
 
     def kwh2won(self, energy) :
         
-        _LOGGER.debug(f'전기사용량 : {energy}')
+        _LOGGER.debug(f'########### 전기사용량 : {energy}')
         energy = float(energy)
         if energy == 0 :
             self._ret['energy'] = 0.0001
@@ -483,14 +477,16 @@ class kwh2won_api:
 
 cfg = {
     'pressure' : 'low',
-    'checkDay' : 0, # 검침일
+    'checkDay' : 1, # 검침일
     'today' : datetime.datetime(2021,12,22, 1,0,0), # 오늘
-    # 'today': NOW,
+    # 'today': datetime.datetime.now(),
     'bigfamDcCfg' : 0, # 대가족 요금할인
     'welfareDcCfg' : 0, # 복지 요금할인
 }
 
 K2W = kwh2won_api(cfg)
-ret = K2W.kwh2won(1100)
-# import pprint
-# pprint.pprint(ret)
+ret = K2W.kwh2won(20)
+# K2W.calc_lengthDays()
+# forc = K2W.energy_forecast(17)
+# # import pprint
+# # pprint.pprint(ret)
