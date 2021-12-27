@@ -13,7 +13,7 @@
 <br>
 
 ## 한전 전기요금 자료 링크
-- [한전 전기요금계산기](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp) (계산 단가 확인 필!!)
+- [한전 전기요금계산기](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/J/A/CYJAPP000NFL.jsp)
 - [전기요금표](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp)
 - [복지할인요금제](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00208.jsp), [대가족,생명유지장치요금제](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00209.jsp)
 - [연료비조정금액](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00210.jsp), [기후환경요금](https://cyber.kepco.co.kr/ckepco/front/jsp/CY/H/C/CYHCHP00211.jsp)
@@ -43,6 +43,8 @@
 | v1.1.1  | 2021.12.22  | 월이 바뀌었을때 월길이 계산 오류 수정 |
 | v1.1.3  | 2021.12.25  | 센서 입력에서 센서 선택으로 수정, entitiy_id 접미사 변경으로 마그래이션 불가 (지우고, 다시 등록필요) |
 | v1.1.4  | 2021.12.25  | 검침일 선택형으로 수정, 누진계산 오류 수정, 예상 사용량 일수 계산 오류 수정 |
+| v1.1.5  | 2021.12.25  | 전력량단가를 환경비용요금 적용전단가(계정전단가)로 수정 (af950833님의 제보) |
+
 
 <br>
 
