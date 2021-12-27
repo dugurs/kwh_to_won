@@ -3,9 +3,9 @@
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "1.1.4"
+VERSION = "1.1.7"
 MODEL = "kwh2won"
-MANUFACTURER = "전기요금계산"
+MANUFACTURER = "다은아빠"
 
 
 PRESSURE_OPTION = {
