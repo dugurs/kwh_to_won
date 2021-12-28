@@ -120,9 +120,12 @@ class kwh2won_api:
     # 시간나누기 = ((사용일-1)*24)+(현재시간+1)
     # 시간곱하기 = 월일수*24
     # 예측 = 에너지 / 시간나누기 * 시간곱하기
-    def energy_forecast(self, energy):
+    def energy_forecast(self, energy, today=None):
+        if today:
+            self._ret['today'] = today
         self.calc_lengthDays() # 사용일 구하기 호출
         today = self._ret['today']
+        checkMonth = self._ret['checkMonth']
         checkDay = self._ret['checkDay']
         useDays = self._ret['useDays']
         monthDays = self._ret['monthDays']
@@ -133,6 +136,7 @@ class kwh2won_api:
             'forcest': forcest,
             'monthDays': monthDays,
             'useDays': useDays,
+            'checkMonth': checkMonth,
             'checkDay': checkDay,
             'today': today.day,
         }
@@ -148,22 +152,35 @@ class kwh2won_api:
     def calc_lengthDays(self) :
         today = self._ret['today']
         checkDay = self._ret['checkDay']
-        if (checkDay == 0 or checkDay >= 28): # 말일미면, 말일로 다시 셋팅
-            checkDay = self.last_day_of_month(today)
-            checkDay = checkDay.day
-        if today.day >= checkDay : # 오늘이 검침일보다 크면
-            lastday = self.last_day_of_month(today) # 달의 마지막일이 전체 길이
-            useDays = today.day - checkDay +1
-        else : # 오늘이 검칠일보다 작으면
-            lastday = today - datetime.timedelta(days=today.day) # 전달의 마지막일이 전체 길이
-            useDays = lastday.day + today.day - checkDay +1
-        self._ret['checkMonth'] = lastday.month
-        self._ret['monthDays'] = lastday.day
+        if (checkDay == 0 or checkDay >= 28): # 검침일이 말일미면
+            lastday = self.last_day_of_month(today) # 이번달 말일
+            if today.day == lastday.day : # 오늘이 말일미면, 시작일
+                next_lastday = self.last_day_of_month(today + datetime.timedelta(days=1)) # 다음달 말일
+                checkMonth = today.month
+                monthDays = next_lastday.day
+                useDays = 1
+                checkDay = today.day
+            else : # 말일이 아니면
+                prev_lastday = today - datetime.timedelta(days=today.day) # 전달 말일
+                checkMonth = prev_lastday.month
+                monthDays = lastday.day
+                useDays = today.day + 1
+                checkDay = prev_lastday.day
+        else :
+            if today.day >= checkDay : # 오늘이 검침일보다 크면
+                lastday = self.last_day_of_month(today) # 달의 마지막일이 전체 길이
+                useDays = today.day - checkDay +1
+            else : # 오늘이 검칠일보다 작으면
+                lastday = today - datetime.timedelta(days=today.day) # 전달의 마지막일이 전체 길이
+                useDays = lastday.day + today.day - checkDay +1
+            checkMonth = lastday.month
+            monthDays = lastday.day
+        self._ret['checkMonth'] = checkMonth
+        self._ret['monthDays'] = monthDays
         self._ret['useDays'] = useDays
         if (checkDay >= 28): # 말일미면, 말일로 다시 셋팅
-            self._ret['checkDay'] = lastday.day
-        _LOGGER.debug(f"## 월일수:{lastday.day}, ({lastday.month}월), 사용일{useDays} 검침일{self._ret['checkDay']}")
-        # _LOGGER.debug(f'월일수: {monthDays}')
+            self._ret['checkDay'] = checkDay
+        _LOGGER.debug(f"## 검침시작 {checkMonth}월 {self._ret['checkDay']}일, 오늘 {today.month}월 {today.day}일, 검침일수:{monthDays}, 사용일수{useDays}, 남은일수{monthDays - useDays}")
 
 
     # 월별 동계, 하계 일수 구하기
@@ -448,7 +465,7 @@ class kwh2won_api:
         _LOGGER.debug(f"청구금액(10원미만절사):{total}원 = (전기요금계{elecSumWon} + 부가가치세{vat} + 전력산업기반기금{baseFund})")
 
 
-    def kwh2won(self, energy) :
+    def kwh2won(self, energy, today=None) :
         
         _LOGGER.debug(f'########### 전기사용량 : {energy}')
         energy = float(energy)
@@ -456,6 +473,9 @@ class kwh2won_api:
             self._ret['energy'] = 0.0001
         else :
             self._ret['energy'] = energy
+
+        if today:
+            self._ret['today'] = today
 
         _LOGGER.debug(f"오늘: {self._ret['today']}, 검침일: {self._ret['checkDay']}")
         
