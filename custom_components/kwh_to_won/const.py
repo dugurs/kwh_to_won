@@ -3,7 +3,7 @@
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "1.1.7"
+VERSION = "1.1.8"
 MODEL = "kwh2won"
 MANUFACTURER = "다은아빠"
 
@@ -14,12 +14,12 @@ PRESSURE_OPTION = {
 }
 BIGFAM_DC_OPTION = {
     0:'해당없음',
-    1:'5인이상 가구,출산가구,3자녀이상 가구',
+    1:'5인이상,3자녀이상,출산 가구',
     2:'생명유지장치'
 }
 WELFARE_DC_OPTION = {
     0:'해당없음',
-    1:'독립유공자,국가유공자,5.18민주유공자,장애인',
+    1:'유공자,장애인',
     2:'사회복지시설',
     3:'기초생활(생계.의료)',
     4:'기초생활(주거.교육)',
