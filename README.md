@@ -100,5 +100,5 @@ utility_meter:
 <br>
 
 ## 도움
-- https://github.com/dolezsa/thermal_comfort <br>
+- https://github.com/oukene/extend_temperature <br>
   위 통합구성요소를 기반으로 작성되었습니다.
