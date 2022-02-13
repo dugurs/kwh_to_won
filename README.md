@@ -47,6 +47,7 @@
 | v1.1.6  | 2021.12.27  | 누진 계산 오류 수정 |
 | v1.1.7  | 2021.12.27  | 반올림 오차 수정 |
 | v1.1.8  | 2021.12.28  | 검침일이 말일일때 일수 계산 오류 수정, 오늘(now)이 갱신되지 않은 오류 수정 |
+| v1.1.9  | 2022.02.13  | 구성요소 생성, 수정시 값 즉시 반영 수정 (우기네님 소스 참고) |
 
 
 <br>
@@ -69,12 +70,13 @@
 - 검침일에 맞줘 카운팅되는 월간 누적 사용량 센서가 있어야 합니다.
 - 없다면 아래와같이 [`utility_meter`](https://www.home-assistant.io/integrations/utility_meter/)를 이용해 만들어줘야 합니다.
 ```
+# 매달 11일 0시 0분에 리셋 (검침 시작일 11일)
 utility_meter:
   pzemac_energy_monthly:
     source: sensor.pzemac_energy
     cycle: monthly
     offset:
-      days: 11
+      days: 10
 ```
 ### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
@@ -90,8 +92,13 @@ utility_meter:
 <br>
 
 ## 보완 예정 사항
-
+- 
 <br>
 
 ## 발견된 문제점
-- 생성된 센서값이 업데이트 되지 전까지 '알수없음'
+- 
+<br>
+
+## 도움
+- https://github.com/dolezsa/thermal_comfort <br>
+  위 통합구성요소를 기반으로 작성되었습니다.

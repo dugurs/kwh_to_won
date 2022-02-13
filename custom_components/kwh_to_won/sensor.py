@@ -50,23 +50,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     bigfam_dc_config = int(config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config")))
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
 
-    async def async_update_data():
-        """Fetch data from API endpoint.
-
-        This is the place to pre-process the data to lookup tables
-        so entities can quickly look up their data.
-        """
-        try:
-            # Note: asyncio.TimeoutError and aiohttp.ClientError are already
-            # handled by the data update coordinator.
-            async with async_timeout.timeout(10):
-                return await api.fetch_data()
-        except ApiAuthError as err:
-            # Raising ConfigEntryAuthFailed will cancel future updates
-            # and start a config flow with SOURCE_REAUTH (async_step_reauth)
-            raise ConfigEntryAuthFailed from err
-        except ApiError as err:
-            raise UpdateFailed(f"Error communicating with API: {err}")
+    hass.data[DOMAIN]["listener"] = []
 
     new_devices = []
 
@@ -216,18 +200,26 @@ class ExtendSensor(SensorBase):
         }
         self.KWH2WON = K2WAPI(cfg)
 
-        async_track_state_change(
-            self.hass, self._energy_entity, self.energy_state_listener)
+        # async_track_state_change(self.hass, self._energy_entity, self.energy_state_listener)
+        self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
 
-        # energy_state = hass.states.get(energy_entity)
-        # if _is_valid_state(energy_state):
-        #     self._energy = math.floor(float(energy_state.state)*10)/10 # kwh 소수 1자리 이하 버림
+        self.hass.states.get(self._energy_entity)
+        self.update()
+
+    def setStateListener(self, hass, entity, listener):
+        hass.data[DOMAIN]["listener"].append(async_track_state_change(
+                self.hass, entity, listener))
+            
+        entity_state = self.hass.states.get(entity)
+        if _is_valid_state(entity_state):
+            return float(entity_state.state)
 
     def energy_state_listener(self, entity, old_state, new_state):
         """Handle temperature device state changes."""
         if _is_valid_state(new_state):
             self._energy = util.convert(new_state.state, float)
         self.async_schedule_update_ha_state(True)
+
 
     def unique_id(self):
         """Return Unique ID string."""

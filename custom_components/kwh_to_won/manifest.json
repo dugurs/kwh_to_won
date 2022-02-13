@@ -4,8 +4,11 @@
   "config_flow": true,
   "documentation": "https://github.com/dugurs/kwh2won",
   "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
   "dependencies": [],
   "codeowners": ["@dugurs"],
   "iot_class": "local_polling",
-  "version": "1.1.8"
+  "version": "1.1.9"
 }
