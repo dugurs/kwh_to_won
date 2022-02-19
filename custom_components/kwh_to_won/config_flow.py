@@ -17,7 +17,8 @@ OPTION_LIST = [
     ("checkday_config", 1, vol.In(CHECKDAY_OPTION)),
     ("pressure_config", "low", vol.In(PRESSURE_OPTION)),
     ("bigfam_dc_config", 0, vol.In(BIGFAM_DC_OPTION)),
-    ("welfare_dc_config", 0, vol.In(WELFARE_DC_OPTION))
+    ("welfare_dc_config", 0, vol.In(WELFARE_DC_OPTION)),
+    ("prev_energy_entity", "", str)
 ]
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -35,7 +36,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         kwh_sensor = _kwh_energy_sensors(self.hass)
         if len(kwh_sensor) == 0:
             errors['energy_entity'] = 'entity_not_found'
-        to_replace = {'energy_entity': vol.In(sorted(kwh_sensor))}
+            errors['prev_energy_entity'] = 'entity_not_found'
+        kwh_sensor.sort()
+        kwh_sensor2 = kwh_sensor[:]
+        kwh_sensor2.insert(0,"사용 안함")
+        to_replace = {'energy_entity': vol.In(kwh_sensor), 'prev_energy_entity': vol.In(kwh_sensor2)}
 
         data_schema = {vol.Required('device_name'): str}
         for name, default, validation in OPTION_LIST:
@@ -86,7 +91,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         kwh_sensor = _kwh_energy_sensors(self.hass)
         if len(kwh_sensor) == 0:
             errors['energy_entity'] = 'entity_not_found'
-        to_replace = {'energy_entity': vol.In(sorted(kwh_sensor))}
+            errors['prev_energy_entity'] = 'entity_not_found'
+        kwh_sensor.sort()
+        kwh_sensor2 = kwh_sensor[:]
+        kwh_sensor2.insert(0,"사용 안함")
+        to_replace = {'energy_entity': vol.In(kwh_sensor), 'prev_energy_entity': vol.In(kwh_sensor2)}
 
         options_schema = {}
         for name, default, validation in OPTION_LIST:

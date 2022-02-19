@@ -147,7 +147,14 @@ class kwh2won_api:
         next_month = any_day.replace(day=28) + datetime.timedelta(days=4)  # this will never fail
         return next_month - datetime.timedelta(days=next_month.day)
 
+    # 전달 검침말일 구하기
+    def prev_checkday(self, today):
+        self._ret['today'] = today
+        self.calc_lengthDays()
+        d = datetime.date(self._ret['checkYear'], self._ret['checkMonth'], self._ret['checkDay'])
+        return d - datetime.timedelta(days=1)
 
+        
     # 월 사용일 구하기
     def calc_lengthDays(self) :
         today = self._ret['today']
@@ -156,12 +163,14 @@ class kwh2won_api:
             lastday = self.last_day_of_month(today) # 이번달 말일
             if today.day == lastday.day : # 오늘이 말일미면, 시작일
                 next_lastday = self.last_day_of_month(today + datetime.timedelta(days=1)) # 다음달 말일
+                checkYear = today.year
                 checkMonth = today.month
                 monthDays = next_lastday.day
                 useDays = 1
                 checkDay = today.day
             else : # 말일이 아니면
                 prev_lastday = today - datetime.timedelta(days=today.day) # 전달 말일
+                checkYear = prev_lastday.year
                 checkMonth = prev_lastday.month
                 monthDays = lastday.day
                 useDays = today.day + 1
@@ -173,8 +182,10 @@ class kwh2won_api:
             else : # 오늘이 검칠일보다 작으면
                 lastday = today - datetime.timedelta(days=today.day) # 전달의 마지막일이 전체 길이
                 useDays = lastday.day + today.day - checkDay +1
+            checkYear = lastday.year
             checkMonth = lastday.month
             monthDays = lastday.day
+        self._ret['checkYear'] = checkYear
         self._ret['checkMonth'] = checkMonth
         self._ret['monthDays'] = monthDays
         self._ret['useDays'] = useDays

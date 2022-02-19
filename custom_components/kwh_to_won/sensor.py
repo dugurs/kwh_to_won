@@ -33,6 +33,7 @@ SENSOR_TYPES = {
     'kwhto_won': ['전기 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
     'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
     'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
+    'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
 }
 
 
@@ -49,12 +50,18 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     pressure_config = config_entry.options.get("pressure_config", config_entry.data.get("pressure_config"))
     bigfam_dc_config = int(config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config")))
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
+    prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
 
     hass.data[DOMAIN]["listener"] = []
 
     new_devices = []
 
     for sensor_type in SENSOR_TYPES:
+        if sensor_type == "kwhto_won_prev":
+            if (prev_energy_entity == None or prev_energy_entity == "사용 안함"):
+                continue
+            else:
+                energy_entity = prev_energy_entity
         new_devices.append(
                 ExtendSensor(
                         hass,
@@ -288,6 +295,8 @@ class ExtendSensor(SensorBase):
             else :
                 if self._sensor_type == "kwhto_won": # 전기 사용 요금
                     ret = self.KWH2WON.kwh2won(self._energy, datetime.datetime.now())
+                elif self._sensor_type == "kwhto_won_prev": # 전기 전월 사용 요금
+                    ret = self.KWH2WON.kwh2won(self._energy, self.KWH2WON.prev_checkday(datetime.datetime.now()))
                 else: # 예상 전기 사용 요금
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                     forcest = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())

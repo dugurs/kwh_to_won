@@ -8,11 +8,12 @@
             "user": {
                 "data": {
                     "device_name": "Enter the name of the device to be created",
-                    "energy_entity": "Choose a monthly electricity usage sensor",
+                    "energy_entity": "Select a monthly electricity usage sensor",
                     "checkday_config": "Please select the reading date",
                     "pressure_config": "Please select the contract purpose",
                     "bigfam_dc_config": "Discount Select Applicable (Large Families)",
-                    "welfare_dc_config": "Discount Select Applicable (Welfare)"
+                    "welfare_dc_config": "Discount Select Applicable (Welfare)",
+                    "prev_energy_entity": "Select a previous month's electricity usage sensor"
                 }
             }
 
@@ -27,13 +28,14 @@
     "options": {
         "step": {
             "init": {
-                "title": "Electricity bill sensor",
+                "title": "Electricity bill sensor option",
                 "data": {
-                    "energy_entity": "Choose a monthly electricity usage sensor",
+                    "energy_entity": "Select a monthly electricity usage sensor",
                     "checkday_config": "Please select the reading date",
                     "pressure_config": "Please select the contract purpose",
                     "bigfam_dc_config": "Discount Select Applicable (Large Families)",
-                    "welfare_dc_config": "Discount Select Applicable (Welfare)"
+                    "welfare_dc_config": "Discount Select Applicable (Welfare)",
+                    "prev_energy_entity": "Select a previous month's electricity usage sensor"
                 }
             }
         },

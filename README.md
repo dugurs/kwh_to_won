@@ -48,6 +48,7 @@
 | v1.1.7  | 2021.12.27  | 반올림 오차 수정 |
 | v1.1.8  | 2021.12.28  | 검침일이 말일일때 일수 계산 오류 수정, 오늘(now)이 갱신되지 않은 오류 수정 |
 | v1.1.9  | 2022.02.13  | 구성요소 생성, 수정시 값 즉시 반영 수정 (우기네님 소스 참고) |
+| v1.1.10  | 2022.02.19  | 전월 사용요금 센서 추가 |
 
 
 <br>
@@ -66,7 +67,7 @@
 <br>
 
 ## 사용
-### 월간 누적 사용량 센서
+### 월간 누적 사용량 센서 및 전월 사용량 센서
 - 검침일에 맞줘 카운팅되는 월간 누적 사용량 센서가 있어야 합니다.
 - 없다면 아래와같이 [`utility_meter`](https://www.home-assistant.io/integrations/utility_meter/)를 이용해 만들어줘야 합니다.
 ```
@@ -78,6 +79,22 @@ utility_meter:
     offset:
       days: 10
 ```
+<br>
+- 전월 사용량 센서는 다음과 같이 만들수 있습니다.(참고)
+
+```
+sensor:
+  - platform: template
+    sensors:
+      pzemac_energy_prev_monthly:
+        friendly_name: "전력 전월 사용량"
+        unit_of_measurement: kWh
+        value_template: "{{ state_attr('sensor.pzemac_energy_monthly','last_period') |round(1) }}"
+        device_class: energy
+        attribute_templates:
+          state_class: total_increasing
+```
+
 ### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
@@ -88,6 +105,8 @@ utility_meter:
   - `sensor.test_kwhto_won` 전기요금 센서
   - `sensor.test_kwhto_forecast` 예상 사용량 센서
   - `sensor.test_kwhto_forecast_won` 예상 전기요금 센서
+- 전월 사용량 센서를 선택 했다면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
+  - `sensor.test_kwhto_won_prev` 전월 전기요금 센서
 
 <br>
 
@@ -96,7 +115,7 @@ utility_meter:
 <br>
 
 ## 발견된 문제점
-- 
+- 전월 전기요금 센서 생성 후 사용안한으로 변경시 자동제거 안됨(수동삭제 가능)
 <br>
 
 ## 도움
