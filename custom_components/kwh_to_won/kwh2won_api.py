@@ -15,25 +15,25 @@ _LOGGER = logging.getLogger(__name__)
 CALC_PARAMETER = {
     'low': {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
-        'kwhPrice' : [93.3, 187.9, 280.6, 709.5],   # 전력량 요금(원/kWh) - (환경비용차감을 반영하지 않은 단가)
+        'kwhPrice' : [98.1, 192.7, 285.4, 704.5],   # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
         'kwhSection': {
             'etc' : [200, 400, 10000],    # 구간(kWh - 기타)
             'winter' : [200, 400, 1000, 10000],    # 구간(kWh - 동계)
             'summer' : [300, 450, 1000, 10000]   # 구간(kWh - 하계)(7~8월)
         },
-        'adjustment' : [-5, 5.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
+        'adjustment' : [6.7, 7.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
         'elecBasicLimit' : 2000,     # 필수사용공제
         'elecBasic200Limit' : 4000   # 200kWh이하 감액
     },
     'high': {
         'basicPrice' : [730, 1260, 6060, 6060],  # 기본요금(원/호)
-        'kwhPrice' : [78.3, 147.3, 215.6, 574.6], # 전력량 요금(원/kWh) - (환경비용차감을 반영하지 않은 단가)
+        'kwhPrice' : [83.1, 152.1, 220.4, 569.6], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가
         'kwhSection': {
             'etc' : [200, 400, 10000],   # 구간(kWh - 기타)
             'winter' : [200, 400, 1000, 10000],   # 구간(kWh - 동계)
             'summer' : [300, 450, 1000, 10000], # 구간(kWh - 하계)(7~8월)
         },
-        'adjustment' : [-5, 5.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액
+        'adjustment' : [6.7, 7.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
         'elecBasicLimit' : 1500,     # 필수사용공제
         'elecBasic200Limit' : 2500   # 200kWh이하 감액
     },
@@ -59,6 +59,93 @@ CALC_PARAMETER = {
     }
 }
 
+# http://www.kais99.org/jkais/springNfall/spring2021/poster/2021_spring_225.pdf
+# https://www.motie.go.kr/common/download.do?fid=bbs&bbs_cd_n=81&bbs_seq_n=163646&file_seq_n=2
+# https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp
+# 기후 환경요금 = 신재생에너지 의무이행 비용 (RPS) + 온실가스 배출권 거래비용 (ETS) + 석탄발전 감축비용 [CGS]
+# 기후 환경요금  = 4.5 + 0.5 + 0.3
+# 환경비용차감  = RPS + ETS = 4.5 + 0.5
+
+# 개편 요금
+# 기후 환경요금 = RPS + ETS + 석탄발전 감축비용
+# 기후 환경요금  = 5.9 + 0.8 + 0.6 = 7.3
+# 환경비용차감  = RPS + ETS = 5.9 + 0.8 = 6.7
+
+# 전기요금 계산 
+#  예시에 따라 아래와 같이 계산됩니다(기본요금·연료비조정요금 미반영). 
+# ==================================================== 
+#  (예시) 사용기간 `22. 3. 11 ~ `22. 4. 10, 검침일 11일, 사용량 350kWh 
+#   * ’22.4.1일부로 현행 전력량요금에서 +4.9원/㎾h 인상 적용 
+# ==================================================== 
+#   가. 전력량요금 : 45,648원(원 미만 절사) 
+#    ○ (1단계) 200kWh×88.3원×(21/31)일 + 200kWh×93.2원×(10/31)일 = 17,976원 
+#    ○ (2단계) 150kWh×182.9원×(21/31)일 + 150kWh×187.8원×(10/31)일 = 27,672원 
+ 
+#   나. 기후환경요금 : 2,080원(원 미만 절사) 
+#    ○ 350kWh×5.3×(21/31)일 + 350kWh×7.3×(10/31)일 = 2,080원 
+ 
+#    ☞  전기요금 = 47,728원(45,648원 + 2,080원)
+PRICE_JOIN = {
+    '2201': '2201',
+    '2202': '2201',
+    '2203': '2201',
+    '2204': '2204',
+    '2205': '2204',
+    '2206': '2204',
+    '2207': '2204',
+    '2208': '2204',
+    '2209': '2204',
+    '2210': '2210',
+    '2211': '2210',
+    '2212': '2210',
+
+    '2301': '2210',
+    '2302': '2210',
+    '2303': '2210',
+    '2304': '2210',
+    '2305': '2210',
+    '2306': '2210',
+    '2307': '2210',
+    '2308': '2210',
+    '2309': '2210',
+    '2310': '2210',
+    '2311': '2210',
+    '2312': '2210'
+}
+
+MONTHLY_PRICE = {
+    '2201': {
+        'low': {
+            'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
+            'adjustment' : [5, 5.3, 0] # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
+        },
+        'high': {
+            'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
+            'adjustment' : [5, 5.3, 0]
+        }
+    },
+    '2204': {
+        'low': {
+            'kwhPrice' : [93.2, 187.8, 280.5, 704.5],
+            'adjustment' : [6.7, 7.3, 0]
+        },
+        'high': {
+            'kwhPrice' : [78.2, 147.2, 215.5, 569.6],
+            'adjustment' : [6.7, 7.3, 0]
+        }
+    },
+    '2210': {
+        'low': {
+            'kwhPrice' : [98.1, 192.7, 285.4, 704.5],
+            'adjustment' : [6.7, 7.3, 0]
+        },
+        'high': {
+            'kwhPrice' : [83.1, 152.1, 220.4, 569.6],
+            'adjustment' : [6.7, 7.3, 0]
+        }
+    }
+}
+
 class kwh2won_api:
     def __init__(self, cfg):
         ret = {
@@ -69,31 +156,30 @@ class kwh2won_api:
             'today': datetime.datetime.now(),
             'bigfamDcCfg' : 0, # 대가족 요금할인
             'welfareDcCfg' : 0, # 복지 요금할인
+            'checkYear':0, # 검침년
             'checkMonth':0, # 검침월
             'monthDays': 0, # 월일수
             'useDays': 0, # 사용일수
-            'season': 'winter',
-            'etc' : {
+            'season': 'etc',
+            'mm1' : {
+                'yymm': 0,     # 사용년월
+                'season': 'etc', # 시즌
                 'energy': 0,     # 사용량
                 'basicWon': 0,   # 기본요금
                 'kwhWon': 0,     # 전력량요금
                 'diffWon': 0,    # 환경비용차감
+                'climateWon': 0, # 기후환경요금
                 'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
             },
-            'winter' : {
+            'mm2' : {
+                'yymm': 0,     # 사용년월
+                'season': 'etc', # 시즌
                 'energy': 0,     # 사용량
                 'basicWon': 0,   # 기본요금
                 'kwhWon': 0,     # 전력량요금
                 'diffWon': 0,    # 환경비용차감
-                'useDays': 0,    # 사용일수
-                'kwhStep': 0,    # 누진단계
-            },
-            'summer' : {
-                'energy': 0,     # 사용량
-                'basicWon': 0,   # 기본요금
-                'kwhWon': 0,     # 전력량요금
-                'diffWon': 0,    # 환경비용차감
+                'climateWon': 0, # 기후환경요금
                 'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
             },
@@ -191,43 +277,65 @@ class kwh2won_api:
         self._ret['useDays'] = useDays
         if (checkDay >= 28): # 말일미면, 말일로 다시 셋팅
             self._ret['checkDay'] = checkDay
-        _LOGGER.debug(f"## 검침시작 {checkMonth}월 {self._ret['checkDay']}일, 오늘 {today.month}월 {today.day}일, 검침일수:{monthDays}, 사용일수{useDays}, 남은일수{monthDays - useDays}")
+        _LOGGER.debug(f"## 검침시작 {checkYear}년 {checkMonth}월 {self._ret['checkDay']}일, 오늘 {today.month}월 {today.day}일, 검침일수:{monthDays}, 사용일수{useDays}, 남은일수{monthDays - useDays}")
 
 
     # 월별 동계, 하계 일수 구하기
     # checkDay = 시작일
     def calc_lengthUseDays(self) :
         checkDay = self._ret['checkDay']
+        checkYear = self._ret['checkYear']
         checkMonth = self._ret['checkMonth']
         monthDays = self._ret['monthDays']
-        # today = int(self._ret['today'].strftime('%m%d'))
-        today = int(self._ret['today'].strftime('%d'))
         etc = 0
         winter = 0
         summer = 0
-        moons = {
-            checkMonth : monthDays - checkDay +1,
-            checkMonth+1 : checkDay -1
-        }
-        for moon, moonleng in moons.items():
+        if checkMonth == 12 :
+            nextYear = checkYear + 1
+            nextMonth = 1
+        else :
+            nextYear = checkYear
+            nextMonth = checkMonth + 1
+
+        moons = [
+            ("mm1", checkYear, checkMonth , monthDays - checkDay +1),
+            ("mm2", nextYear, nextMonth , checkDay -1)
+        ]
+        
+        # 전력량요금 계산에 사용
+        for mm, year, moon, moonleng in moons:
             if moon in [7,8] :
                 summer += moonleng
+                season = 'summer'
             elif moon in [12,1,2] :
                 winter += moonleng
+                season = 'winter'
             else :
                 etc += moonleng
+                season = 'etc'
+            self._ret[mm]['season'] = season
+            self._ret[mm]['useDays'] = moonleng
 
+            yymm = ((year-2000)*100) + moon
+            self._ret[mm]['yymm'] = f'{yymm}'
+            joinyymm = PRICE_JOIN[f'{yymm}']
+            globals()[f"{mm}"] = season + joinyymm
+            _LOGGER.debug(f'yymm:{yymm} , joinyymm:{joinyymm}')
+
+        # 시즌이 같고, 단가가 같으면 1개로 합치기
+        if mm1 == mm2 :
+            self._ret['mm1']['useDays'] += self._ret['mm2']['useDays']
+            self._ret['mm2']['useDays'] = 0
+
+        # 할인 계산에 사용
         if checkMonth in [7,8] :
             season = 'summer'
         elif checkMonth in [12,1,2] :
             season = 'winter'
         else :
-            season = 'etc'
+            season = 'etc' 
 
         self._ret['season'] = season
-        self._ret['etc']['useDays'] = etc
-        self._ret['winter']['useDays'] = winter
-        self._ret['summer']['useDays'] = summer
 
         _LOGGER.debug(f'검침월:{checkMonth} , 검침일:{checkDay}')
         _LOGGER.debug(f"시즌일수: 기타 {etc}, 동계 {winter}, 하계 {summer}, 현시즌:{season} ")
@@ -242,25 +350,32 @@ class kwh2won_api:
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
         basicPrice = CALC_PARAMETER[pressure]['basicPrice'] # 기본요금(원/호)
-        kwhPrice = CALC_PARAMETER[pressure]['kwhPrice'] # 전력량 단가(원/kWh)
-        diffPrice = CALC_PARAMETER[pressure]['adjustment'][0] # 환경비용차감 단가
+        # kwhPrice = CALC_PARAMETER[pressure]['kwhPrice'] # 전력량 단가(원/kWh)
+        # diffPrice = CALC_PARAMETER[pressure]['adjustment'][0] # 환경비용차감 단가
         monthDays = self._ret['monthDays'] # 월일수
         basicWonSum = 0
         kwhWonSum = 0
+        diffWonSum = 0 # 환경비용차감
+        climateWonSum = 0 # 기후환경요금(원미만 절사)
 
         _LOGGER.debug(f"누진요금구하기 ===== ")
         # 시즌 요금 구하기
-        for season in ['etc','winter','summer'] :
-            seasonDays = self._ret[season]['useDays'] # 사용일수
+        for mm in ['mm1','mm2'] :
+            seasonDays = self._ret[mm]['useDays'] # 사용일수
             if (seasonDays == 0) :
                 continue
+            yymm = self._ret[mm]['yymm'] # 사용연월
+            diffPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][0] # 환경비용차감 단가
+            climatePrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][1] # 기후환경요금 단가
+            kwhPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['kwhPrice'] # 전력량 단가(원/kWh)
+            season = self._ret[mm]['season'] # 사용연월
             kwhSection = CALC_PARAMETER[pressure]['kwhSection'][season] # 구간 단가(kWh)
             kwhStep = 0 # 누진구간
-            basicWon = 0 # 기본요금(원미만절사)
-            kwhWon = 0 # 전력량요금(원미만절사)
-            diffWon = 0 # 환경비용차감(원미만적사)
+            basicWon = 0 # 기본요금
+            kwhWon = 0 # 전력량요금
+            diffWon = 0 # 환경비용차감
             seasonEnergy = energy * seasonDays / monthDays
-            _LOGGER.debug(f"  시즌:{season}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)} ")
+            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)} ")
             restEnergy = energy # 계산하고 남은 
             kwhWonSeason = 0 # 시즌전력량요금
             stepEnergyCalcSum = 0 # 구간 사용량 합계
@@ -277,24 +392,31 @@ class kwh2won_api:
                     stepEnergyCalc = round(energy / monthDays * seasonDays) - stepEnergyCalcSum # 구간 사용량 계산
                 kwhStep += 1 # 누진 단계
                 stepEnergyCalcSum += stepEnergyCalc
-                kwhWon = round(stepEnergyCalc * kwhPrice[kwhStep-1],1) # 구간 요금 계산
+                kwhWon = round(stepEnergyCalc * (kwhPrice[kwhStep-1] + diffPrice), 1) # 구간 요금 계산
                 kwhWonSeason += kwhWon
                 kwhWonSum += kwhWon
                 _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{stepEnergyCalc}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
             basicWon = basicPrice[kwhStep-1] * seasonDays / monthDays
             basicWonSum += basicWon
-            self._ret[season]['basicWon'] = round(basicWon)
-            self._ret[season]['kwhWon'] = kwhWonSum
-            self._ret[season]['kwhStep'] = kwhStep
-            _LOGGER.debug(f"    시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원")
+            diffWon = round((energy * diffPrice) * seasonDays / monthDays , 1) # 환경비용차감
+            diffWonSum += diffWon # 환경비용차감
+            climateWon = round((energy * climatePrice) * seasonDays / monthDays , 1) # 기후환경요금
+            climateWonSum += climateWon # 기후환경요금
+            self._ret[mm]['basicWon'] = round(basicWon)
+            self._ret[mm]['kwhWon'] = kwhWonSum
+            self._ret[mm]['kwhStep'] = kwhStep
+            self._ret[mm]['diffWon'] = diffWon
+            self._ret[mm]['climateWon'] = climateWon
+            _LOGGER.debug(f"    시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원, 환경비용차감:-{diffWon}, 기후환경요금:{climateWon}")
         basicWonSum = math.floor(basicWonSum) # 기본요금합
-        diffWon = energy * diffPrice # 환경비용차감
-        kwhWon = math.floor(kwhWonSum + diffWon) # 전력량요금
+        kwhWon = math.floor(kwhWonSum - diffWonSum) # 전력량요금 (원 미만 절사) 
         self._ret['kwhWon'] = kwhWon
         self._ret['basicWon'] = round(basicWonSum)
-        self._ret['diffWon'] = diffWon
-        _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{diffWon}원 = 사용량:{energy}kWh * 환경비요차감단가:{diffPrice}원")
-        _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} + 환경비용차감:{diffWon}")
+        self._ret['diffWon'] = round(diffWonSum)
+        self._ret['climateWon'] = math.floor(climateWonSum) # 기후환경요금(원미만 절사)
+        _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{diffWonSum}원 = 사용량:{energy}kWh * 환경비요차감단가:{diffPrice}원")
+        _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} - 환경비용차감:{diffWon}")
+        _LOGGER.debug(f"  기후환경요금:{math.floor(climateWonSum)}원")
 
     # 기후환경요금(원미만 절사) : 2,650원
     # 500kWh × 30/30일* = 500kWh(소수 첫째 자리 반올림)
@@ -491,9 +613,9 @@ class kwh2won_api:
         _LOGGER.debug(f"오늘: {self._ret['today']}, 검침일: {self._ret['checkDay']}")
         
         self.calc_lengthDays()    # 월길이
-        self.calc_lengthUseDays() # 상계, 하계 기간
-        self.calc_prog()          # 기본요금, 전력량요금
-        self.calc_climateWon()    # 기후 환경요금
+        self.calc_lengthUseDays() # 동계, 하계, 기타 기간
+        self.calc_prog()          # 기본요금, 전력량요금, 기후 환경요금
+        # self.calc_climateWon()    # 기후 환경요금
         self.calc_fuelWon()       # 연료비조정액
 
         if (self._ret['bigfamDcCfg'] or self._ret['welfareDcCfg']) :
@@ -515,14 +637,14 @@ class kwh2won_api:
 # cfg = {
 #     'pressure' : 'high',
 #     'checkDay' : 11, # 검침일
-#     # 'today' : datetime.datetime(2021,12,22, 1,0,0), # 오늘
-#     'today': datetime.datetime.now(),
-#     'bigfamDcCfg' : 1, # 대가족 요금할인
-#     'welfareDcCfg' : 1, # 복지 요금할인
+#     'today' : datetime.datetime(2022,3,5, 1,0,0), # 오늘
+#     # 'today': datetime.datetime.now(),
+#     'bigfamDcCfg' : 0, # 대가족 요금할인
+#     'welfareDcCfg' : 0, # 복지 요금할인
 # }
 
 # K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(17)
+# ret = K2W.kwh2won(300)
 # K2W.calc_lengthDays()
 # forc = K2W.energy_forecast(17)
 # # import pprint
