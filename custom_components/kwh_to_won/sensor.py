@@ -310,12 +310,10 @@ class ExtendSensor(SensorBase):
                 self._extra_state_attributes['사용용도'] = PRESSURE_OPTION[ret['pressure']]
                 self._extra_state_attributes['대가족_할인'] = BIGFAM_DC_OPTION[ret['bigfamDcCfg']]
                 self._extra_state_attributes['복지_할인'] = WELFARE_DC_OPTION[ret['welfareDcCfg']]
-                if ret['etc']['useDays'] > 0 :
-                    self._extra_state_attributes['누진단계_기타'] = ret['etc']['kwhStep']
-                if ret['winter']['useDays'] > 0 :
-                    self._extra_state_attributes['누진단계_동계'] = ret['winter']['kwhStep']
-                if ret['summer']['useDays'] > 0 :
-                    self._extra_state_attributes['누진단계_하계'] = ret['summer']['kwhStep']
+                if ret['mm1']['useDays'] > 0 :
+                    self._extra_state_attributes['누진단계_A'] = ret['mm1']['kwhStep']
+                if ret['mm2']['useDays'] > 0 :
+                    self._extra_state_attributes['누진단계_B'] = ret['mm2']['kwhStep']
             self._prev_energy = self._energy
 
     async def async_update(self):

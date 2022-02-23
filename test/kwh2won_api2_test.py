@@ -85,26 +85,28 @@ CALC_PARAMETER = {
 #    ○ 350kWh×5.3×(21/31)일 + 350kWh×7.3×(10/31)일 = 2,080원 
  
 #    ☞  전기요금 = 47,728원(45,648원 + 2,080원)
+
 PRICE_JOIN = {
-    '2201': '2201',
-    '2202': '2201',
-    '2203': '2201',
-    '2204': '2204',
-    '2205': '2204',
-    '2206': '2204',
-    '2207': '2204',
-    '2208': '2204',
-    '2209': '2204',
-    '2210': '2210',
-    '2211': '2210',
-    '2212': '2210'
+    '2101':'2101', '2102':'2101', '2103':'2101', '2104':'2101', '2105':'2101', '2106':'2101', '2107':'2101', '2108':'2101', '2109':'2109', '2110':'2109', '2111':'2109', '2112':'2109',
+    '2201':'2109', '2202':'2109', '2203':'2109', '2204':'2204', '2205':'2204', '2206':'2204', '2207':'2204', '2208':'2204', '2209':'2204', '2210':'2210', '2211':'2210', '2212':'2210',
+    '2301':'2210', '2302':'2210', '2303':'2210', '2304':'2210', '2305':'2210', '2306':'2210', '2307':'2210', '2308':'2210', '2309':'2210', '2310':'2210', '2311':'2210', '2312':'2210'
 }
 
 MONTHLY_PRICE = {
-    '2201': {
+    '2101': {
         'low': {
             'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
-            'adjustment' : [5, 5.3, 0] # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
+            'adjustment' : [5, 5.3, -3] # 환경비용차감 + 기후환경요금 + 연료비조정액
+        },
+        'high': {
+            'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
+            'adjustment' : [5, 5.3, -3]
+        }
+    },
+    '2109': {
+        'low': {
+            'kwhPrice' : [88.3, 182.9, 275.6, 704.5],
+            'adjustment' : [5, 5.3, 0]
         },
         'high': {
             'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
@@ -149,7 +151,7 @@ class kwh2won_api:
             'useDays': 0, # 사용일수
             'season': 'etc',
             'mm1' : {
-                'yymm': 0,     # 사용년월
+                'yymm': '',     # 사용년월
                 'season': 'etc', # 시즌
                 'energy': 0,     # 사용량
                 'basicWon': 0,   # 기본요금
@@ -160,7 +162,7 @@ class kwh2won_api:
                 'kwhStep': 0,    # 누진단계
             },
             'mm2' : {
-                'yymm': 0,     # 사용년월
+                'yymm': '',     # 사용년월
                 'season': 'etc', # 시즌
                 'energy': 0,     # 사용량
                 'basicWon': 0,   # 기본요금
@@ -284,26 +286,26 @@ class kwh2won_api:
             nextYear = checkYear
             nextMonth = checkMonth + 1
 
-        moons = [
+        months = [
             ("mm1", checkYear, checkMonth , monthDays - checkDay +1),
             ("mm2", nextYear, nextMonth , checkDay -1)
         ]
         
         # 전력량요금 계산에 사용
-        for mm, year, moon, moonleng in moons:
-            if moon in [7,8] :
-                summer += moonleng
+        for mm, year, month, monthleng in months:
+            if month in [7,8] :
+                summer += monthleng
                 season = 'summer'
-            elif moon in [12,1,2] :
-                winter += moonleng
+            elif month in [12,1,2] :
+                winter += monthleng
                 season = 'winter'
             else :
-                etc += moonleng
+                etc += monthleng
                 season = 'etc'
             self._ret[mm]['season'] = season
-            self._ret[mm]['useDays'] = moonleng
+            self._ret[mm]['useDays'] = monthleng
 
-            yymm = ((year-2000)*100) + moon
+            yymm = ((year-2000)*100) + month
             self._ret[mm]['yymm'] = f'{yymm}'
             joinyymm = PRICE_JOIN[f'{yymm}']
             globals()[f"{mm}"] = season + joinyymm
@@ -320,7 +322,7 @@ class kwh2won_api:
         elif checkMonth in [12,1,2] :
             season = 'winter'
         else :
-            season = 'etc' 
+            season = 'etc'
 
         self._ret['season'] = season
 
@@ -362,7 +364,7 @@ class kwh2won_api:
             kwhWon = 0 # 전력량요금
             diffWon = 0 # 환경비용차감
             seasonEnergy = energy * seasonDays / monthDays
-            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)} ")
+            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)}, 시즌: {season}  ")
             restEnergy = energy # 계산하고 남은 
             kwhWonSeason = 0 # 시즌전력량요금
             stepEnergyCalcSum = 0 # 구간 사용량 합계
@@ -401,8 +403,8 @@ class kwh2won_api:
         self._ret['basicWon'] = round(basicWonSum)
         self._ret['diffWon'] = round(diffWonSum)
         self._ret['climateWon'] = math.floor(climateWonSum) # 기후환경요금(원미만 절사)
-        _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{diffWonSum}원 = 사용량:{energy}kWh * 환경비요차감단가:{diffPrice}원")
-        _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} - 환경비용차감:{diffWon}")
+        _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{round(diffWonSum)}원")
+        _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} - 환경비용차감:{round(diffWonSum)}")
         _LOGGER.debug(f"  기후환경요금:{math.floor(climateWonSum)}원")
 
     # 기후환경요금(원미만 절사) : 2,650원
@@ -422,7 +424,8 @@ class kwh2won_api:
     def calc_fuelWon(self) :
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
-        fuelPrice = CALC_PARAMETER[pressure]['adjustment'][2] # 연료비조정액 단가
+        yymm = self._ret['mm1']['yymm']
+        fuelPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][2] # 연료비조정액 단가
         fuelWon = round(energy * fuelPrice)
         _LOGGER.debug(f"  연료비조정액:{fuelWon}원 = 사용량:{energy}kWh * 연료비조정단가:{fuelPrice}원")
         self._ret['fuelWon'] = fuelWon
@@ -622,16 +625,16 @@ class kwh2won_api:
 
 
 cfg = {
-    'pressure' : 'high',
+    'pressure' : 'low',
     'checkDay' : 11, # 검침일
-    'today' : datetime.datetime(2022,3,5, 1,0,0), # 오늘
+    'today' : datetime.datetime(2022,7,5, 1,0,0), # 오늘
     # 'today': datetime.datetime.now(),
-    'bigfamDcCfg' : 0, # 대가족 요금할인
-    'welfareDcCfg' : 0, # 복지 요금할인
+    'bigfamDcCfg' : 0, # 대가족 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+    'welfareDcCfg' : 0, # 복지 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
 }
 
 K2W = kwh2won_api(cfg)
-ret = K2W.kwh2won(300)
+ret = K2W.kwh2won(1200)
 # K2W.calc_lengthDays()
 # forc = K2W.energy_forecast(17)
 # # import pprint
