@@ -12,6 +12,12 @@ _LOGGER = logging.getLogger(__name__)
 # stream_handler.setFormatter(formatter)
 # _LOGGER.addHandler(stream_handler)
 
+
+# http://www.kais99.org/jkais/springNfall/spring2021/poster/2021_spring_225.pdf
+# https://www.motie.go.kr/common/download.do?fid=bbs&bbs_cd_n=81&bbs_seq_n=163646&file_seq_n=2
+# https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp
+
+
 CALC_PARAMETER = {
     'low': {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
@@ -59,19 +65,6 @@ CALC_PARAMETER = {
     }
 }
 
-# http://www.kais99.org/jkais/springNfall/spring2021/poster/2021_spring_225.pdf
-# https://www.motie.go.kr/common/download.do?fid=bbs&bbs_cd_n=81&bbs_seq_n=163646&file_seq_n=2
-# https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp
-# 기후 환경요금 = 신재생에너지 의무이행 비용 (RPS) + 온실가스 배출권 거래비용 (ETS) + 석탄발전 감축비용 [CGS]
-# 기후 환경요금  = 4.5 + 0.5 + 0.3
-# 환경비용차감  = RPS + ETS = 4.5 + 0.5
-
-# 2022년 4월 개편
-# 기후 환경요금 = RPS + ETS + 석탄발전 감축비용
-# 기후 환경요금  = 5.9 + 0.8 + 0.6 = 7.3
-# 환경비용차감  = RPS + ETS = 5.9 + 0.8 = 6.7
-
-
 PRICE_JOIN = {
     '2101':'2101', '2102':'2101', '2103':'2101', '2104':'2101', '2105':'2101', '2106':'2101', '2107':'2101', '2108':'2101', '2109':'2109', '2110':'2109', '2111':'2109', '2112':'2109',
     '2201':'2109', '2202':'2109', '2203':'2109', '2204':'2204', '2205':'2204', '2206':'2204', '2207':'2204', '2208':'2204', '2209':'2204', '2210':'2210', '2211':'2210', '2212':'2210',
@@ -92,7 +85,7 @@ MONTHLY_PRICE = {
     '2109': {
         'low': {
             'kwhPrice' : [88.3, 182.9, 275.6, 704.5],
-            'adjustment' : [5, 5.3, 0]
+            'adjustment' : [5, 5.3, 0] # RPS 4.5 + ETS 0.5 + 석탄발전 감축비용 0.3
         },
         'high': {
             'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
@@ -102,7 +95,7 @@ MONTHLY_PRICE = {
     '2204': {
         'low': {
             'kwhPrice' : [93.2, 187.8, 280.5, 704.5],
-            'adjustment' : [6.7, 7.3, 0]
+            'adjustment' : [6.7, 7.3, 0] # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6
         },
         'high': {
             'kwhPrice' : [78.2, 147.2, 215.5, 569.6],
@@ -120,6 +113,8 @@ MONTHLY_PRICE = {
         }
     }
 }
+
+
 
 class kwh2won_api:
     def __init__(self, cfg):
@@ -296,11 +291,10 @@ class kwh2won_api:
             else :
                 etc += monthleng
                 season = 'etc'
-            self._ret[mm]['season'] = season
-            self._ret[mm]['useDays'] = monthleng
-
             yymm = ((year-2000)*100) + month
             self._ret[mm]['yymm'] = f'{yymm}'
+            self._ret[mm]['season'] = season
+            self._ret[mm]['useDays'] = monthleng
 
             joinyymm = PRICE_JOIN[f'{yymm}']
             mmdiff.append(season + joinyymm)
@@ -316,10 +310,10 @@ class kwh2won_api:
 
 
     # 전기요금 계산(주거용) 
-    # 기본요금
-    # 전력량요금
-    # 환경비용차감
-    # 기후환경요금
+    # 기본요금(원 미만 절사)
+    # 전력량요금(원 미만 절사) 
+    # 환경비용차감(원 미만 절사)
+    # 기후환경요금(원 미만 절사)
     #  예시에 따라 아래와 같이 계산됩니다(기본요금·연료비조정요금 미반영). 
     # ==================================================== 
     #  (예시) 사용기간 `22. 3. 11 ~ `22. 4. 10, 검침일 11일, 사용량 350kWh 
@@ -355,8 +349,8 @@ class kwh2won_api:
             climatePrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][1] # 기후환경요금 단가
             kwhPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['kwhPrice'] # 전력량 단가(원/kWh)
             season = self._ret[mm]['season'] # 사용연월
-            kwhSection = CALC_PARAMETER[pressure]['kwhSection'][season] # 구간 단가(kWh)
-            kwhStep = 0 # 누진구간
+            kwhSection = CALC_PARAMETER[pressure]['kwhSection'][season] # 누진구간(kWh)
+            kwhStep = 0 # 누진단계
             basicWon = 0 # 기본요금
             kwhWon = 0 # 전력량요금
             diffWon = 0 # 환경비용차감
@@ -378,15 +372,15 @@ class kwh2won_api:
                     stepEnergyCalc = round(energy / monthDays * seasonDays) - stepEnergyCalcSum # 구간 사용량 계산
                 kwhStep += 1 # 누진 단계
                 stepEnergyCalcSum += stepEnergyCalc
-                kwhWon = round(stepEnergyCalc * (kwhPrice[kwhStep-1] + diffPrice), 1) # 구간 요금 계산
+                kwhWon = round(stepEnergyCalc * (kwhPrice[kwhStep-1] + diffPrice), 2) # 구간 요금 계산
                 kwhWonSeason += kwhWon
                 kwhWonSum += kwhWon
                 _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{stepEnergyCalc}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
             basicWon = basicPrice[kwhStep-1] * seasonDays / monthDays
             basicWonSum += basicWon
-            diffWon = round((energy * diffPrice) * seasonDays / monthDays , 1) # 환경비용차감
+            diffWon = round((energy * diffPrice) * seasonDays / monthDays , 2) # 환경비용차감
             diffWonSum += diffWon # 환경비용차감
-            climateWon = round((energy * climatePrice) * seasonDays / monthDays , 1) # 기후환경요금
+            climateWon = round((energy * climatePrice) * seasonDays / monthDays , 2) # 기후환경요금
             climateWonSum += climateWon # 기후환경요금
             self._ret[mm]['basicWon'] = round(basicWon)
             self._ret[mm]['kwhWon'] = kwhWonSum
@@ -396,10 +390,10 @@ class kwh2won_api:
             _LOGGER.debug(f"    시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원, 환경비용차감:-{diffWon}, 기후환경요금:{climateWon}")
         basicWonSum = math.floor(basicWonSum) # 기본요금합
         kwhWon = math.floor(kwhWonSum - diffWonSum) # 전력량요금 (원 미만 절사) 
-        self._ret['kwhWon'] = kwhWon
-        self._ret['basicWon'] = round(basicWonSum)
-        self._ret['diffWon'] = round(diffWonSum)
-        self._ret['climateWon'] = math.floor(climateWonSum) # 기후환경요금(원미만 절사)
+        self._ret['kwhWon'] = kwhWon # 전력량요금(원 미만 절사) 
+        self._ret['basicWon'] = math.floor(basicWonSum) # 기본요금(원 미만 절사)
+        self._ret['diffWon'] = math.floor(diffWonSum) # 환경비용차감(원 미만 절사)
+        self._ret['climateWon'] = math.floor(climateWonSum) # 기후환경요금(원 미만 절사)
         _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{round(diffWonSum)}원")
         _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} - 환경비용차감:{round(diffWonSum)}")
         _LOGGER.debug(f"  기후환경요금:{math.floor(climateWonSum)}원")
@@ -414,13 +408,13 @@ class kwh2won_api:
         pressure = self._ret['pressure'] # 계약전력
         yymm = self._ret['mm1']['yymm']
         fuelPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][2] # 연료비조정액 단가
-        fuelWon = round(energy * fuelPrice)
+        fuelWon = math.floor(energy * fuelPrice)
         _LOGGER.debug(f"  연료비조정액:{fuelWon}원 = 사용량:{energy}kWh * 연료비조정단가:{fuelPrice}원")
         self._ret['fuelWon'] = fuelWon
 
 
 
-    # 필수사용량 보장공제
+    # 필수사용량 보장공제(원미만 절사)
     # 가정용 저압 [200kWh 이하, 최대 2,000원]
     # 가정용 고압, 복지할인시 [200kWh 이하, 2,500원]
     # (기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액) - 1000
@@ -430,7 +424,7 @@ class kwh2won_api:
         elecBasicLimit = CALC_PARAMETER[pressure]['elecBasicLimit'] # 최대할인액
         elecBasic = 200
         if (energy <= elecBasic) :
-            elecBasicDc = self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['diffWon'] + self._ret['fuelWon'] - 1000
+            elecBasicDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['diffWon'] + self._ret['fuelWon'] - 1000)
             if elecBasicDc > elecBasicLimit :
                 elecBasicDc = elecBasicLimit
             self._ret['elecBasicDc'] = elecBasicDc
@@ -438,6 +432,7 @@ class kwh2won_api:
 
 
     # 200kWh 이하 감액(원미만 절사) = 저압 4,000  고압 2,500
+    # 복지할인 해당시
     def calc_elecBasic200(self) :
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
@@ -445,7 +440,7 @@ class kwh2won_api:
         elecBasic = 200
         if (energy <= elecBasic) :
             self._ret['elecBasicDc'] = 0
-            elecBasic200Dc = self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['climateWon'] + self._ret['fuelWon']
+            elecBasic200Dc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['climateWon'] + self._ret['fuelWon'])
             if elecBasic200Dc > elecBasic200Limit :
                 elecBasic200Dc = elecBasic200Limit
             self._ret['elecBasic200Dc'] = elecBasic200Dc
@@ -622,7 +617,7 @@ class kwh2won_api:
 # cfg = {
 #     'pressure' : 'low',
 #     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2022,7,5, 1,0,0), # 오늘
+#     'today' : datetime.datetime(2022,2,24, 1,0,0), # 오늘
 #     # 'today': datetime.datetime.now(),
 #     'bigfamDcCfg' : 0, # 대가족 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
 #     'welfareDcCfg' : 0, # 복지 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
