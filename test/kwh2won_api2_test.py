@@ -65,12 +65,6 @@ CALC_PARAMETER = {
     }
 }
 
-PRICE_JOIN = {
-    '2101':'2101', '2102':'2101', '2103':'2101', '2104':'2101', '2105':'2101', '2106':'2101', '2107':'2101', '2108':'2101', '2109':'2109', '2110':'2109', '2111':'2109', '2112':'2109',
-    '2201':'2109', '2202':'2109', '2203':'2109', '2204':'2204', '2205':'2204', '2206':'2204', '2207':'2204', '2208':'2204', '2209':'2204', '2210':'2210', '2211':'2210', '2212':'2210',
-    '2301':'2210', '2302':'2210', '2303':'2210', '2304':'2210', '2305':'2210', '2306':'2210', '2307':'2210', '2308':'2210', '2309':'2210', '2310':'2210', '2311':'2210', '2312':'2210'
-}
-
 MONTHLY_PRICE = {
     '2101': {
         'low': {
@@ -168,6 +162,19 @@ class kwh2won_api:
         }
         ret.update(cfg)
         self._ret = ret
+
+
+
+    # 당월 단가 찾기
+    def price_find(self, yymm):
+        cnt = -1
+        listym = list(MONTHLY_PRICE.keys())
+        for ym in listym :
+            if ym <= yymm:
+                cnt += 1
+        if cnt == -1 :
+            cnt = 0
+        return listym[cnt]
 
 
 
@@ -296,8 +303,8 @@ class kwh2won_api:
             self._ret[mm]['season'] = season
             self._ret[mm]['useDays'] = monthleng
 
-            joinyymm = PRICE_JOIN[f'{yymm}']
-            mmdiff.append(season + joinyymm)
+            priceYymm = self.price_find(f'{yymm}')
+            mmdiff.append(season + priceYymm)
 
         # 시즌이 같고, 단가가 같으면 사용일을 하나로 합치기
         if mmdiff[0] == mmdiff[1] :
@@ -345,9 +352,10 @@ class kwh2won_api:
             if (seasonDays == 0) :
                 continue
             yymm = self._ret[mm]['yymm'] # 사용연월
-            diffPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][0] # 환경비용차감 단가
-            climatePrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][1] # 기후환경요금 단가
-            kwhPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['kwhPrice'] # 전력량 단가(원/kWh)
+            priceYymm = self.price_find(yymm)
+            diffPrice = MONTHLY_PRICE[priceYymm][pressure]['adjustment'][0] # 환경비용차감 단가
+            climatePrice = MONTHLY_PRICE[priceYymm][pressure]['adjustment'][1] # 기후환경요금 단가
+            kwhPrice = MONTHLY_PRICE[priceYymm][pressure]['kwhPrice'] # 전력량 단가(원/kWh)
             season = self._ret[mm]['season'] # 사용연월
             kwhSection = CALC_PARAMETER[pressure]['kwhSection'][season] # 누진구간(kWh)
             kwhStep = 0 # 누진단계
@@ -355,7 +363,7 @@ class kwh2won_api:
             kwhWon = 0 # 전력량요금
             diffWon = 0 # 환경비용차감
             seasonEnergy = energy * seasonDays / monthDays
-            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)}, 시즌: {season}  ")
+            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}, 에너지: {round(seasonEnergy)}, 시즌: {season} (단가월: {priceYymm}) ")
             restEnergy = energy # 계산하고 남은 
             kwhWonSeason = 0 # 시즌전력량요금
             stepEnergyCalcSum = 0 # 구간 사용량 합계
@@ -407,7 +415,8 @@ class kwh2won_api:
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
         yymm = self._ret['mm1']['yymm']
-        fuelPrice = MONTHLY_PRICE[PRICE_JOIN[yymm]][pressure]['adjustment'][2] # 연료비조정액 단가
+        priceYymm = self.price_find(yymm)
+        fuelPrice = MONTHLY_PRICE[priceYymm][pressure]['adjustment'][2] # 연료비조정액 단가
         fuelWon = math.floor(energy * fuelPrice)
         _LOGGER.debug(f"  연료비조정액:{fuelWon}원 = 사용량:{energy}kWh * 연료비조정단가:{fuelPrice}원")
         self._ret['fuelWon'] = fuelWon
@@ -617,14 +626,14 @@ class kwh2won_api:
 cfg = {
     'pressure' : 'low',
     'checkDay' : 11, # 검침일
-    'today' : datetime.datetime(2022,2,24, 1,0,0), # 오늘
+    'today' : datetime.datetime(2022,3,24, 1,0,0), # 오늘
     # 'today': datetime.datetime.now(),
     'bigfamDcCfg' : 0, # 대가족 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
     'welfareDcCfg' : 0, # 복지 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
 }
 
 K2W = kwh2won_api(cfg)
-ret = K2W.kwh2won(321)
+ret = K2W.kwh2won(1200)
 # K2W.calc_lengthDays()
 # forc = K2W.energy_forecast(17)
 # # import pprint
