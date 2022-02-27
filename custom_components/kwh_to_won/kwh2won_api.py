@@ -172,6 +172,8 @@ class kwh2won_api:
         for ym in listym :
             if ym <= yymm:
                 cnt += 1
+            else :
+                break
         if cnt == -1 :
             cnt = 0
         return listym[cnt]
