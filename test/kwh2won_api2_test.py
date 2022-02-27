@@ -628,12 +628,12 @@ cfg = {
     'checkDay' : 11, # 검침일
     'today' : datetime.datetime(2022,3,24, 1,0,0), # 오늘
     # 'today': datetime.datetime.now(),
-    'bigfamDcCfg' : 0, # 대가족 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
-    'welfareDcCfg' : 0, # 복지 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
+    'bigfamDcCfg' : 1, # 대가족 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+    'welfareDcCfg' : 1, # 복지 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
 }
 
 K2W = kwh2won_api(cfg)
-ret = K2W.kwh2won(1200)
+ret = K2W.kwh2won(500)
 # K2W.calc_lengthDays()
 # forc = K2W.energy_forecast(17)
 # # import pprint
