@@ -541,6 +541,7 @@ class kwh2won_api:
         welfareDc = self._ret['welfareDc']
         if (welfareDcCfg >= 3) : # 중복할인
             dcValue = bigfamDc + welfareDc
+            _LOGGER.debug(f'복지할인 {dcValue} = 대가족 요금할인 {bigfamDc} + 복지 요금할인 {welfareDc} 중복할인')
         else :
             if (bigfamDc > welfareDc) :
                 self._ret['welfareDc'] = 0
@@ -548,7 +549,7 @@ class kwh2won_api:
             else :
                 self._ret['bigfamDc'] = 0
                 dcValue = welfareDc
-            _LOGGER.debug(f'복지할인 {dcValue} = 대가족 요금할인 {bigfamDc} + 복지 요금할인 {welfareDc} 더큰것')
+            _LOGGER.debug(f'복지할인 {dcValue} = 대가족 요금할인 {bigfamDc} or 복지 요금할인 {welfareDc} 더큰것')
 
 
 
