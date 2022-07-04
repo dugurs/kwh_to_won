@@ -51,7 +51,7 @@
 | v1.1.10  | 2022.02.19  | 전월 사용요금 센서 추가 |
 | v1.2.0  | 2022.02.23  | 22년 4월 부터 변결될 요금제 적용<br>- 기후 환경요금 = 7.3 = RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6<br>- 전력단가 4.9원 인상, 22년 10월 부터 전력단가 4.9원 2차 인상 |
 | v1.2.1  | 2022.02.27  | 사용월 단가 찾기 방식 변경 |
-| v1.2.2  | 2022.07.04  | 22년 7월~9월 연료비 조정액 +5원으로 확정 반영<br>복지할인폭 상향 반영(7~9월 한시적) - [보도자료](https://home.kepco.co.kr/kepco/PR/ntcob/ntcobView.do?pageIndex=1&boardSeq=21057714&boardCd=BRD_000117&menuCd=FN06030103&parnScrpSeq=0&searchCondition=total&searchKeyword=) |
+| v1.2.2  | 2022.07.04  | 22년 7-9월 연료비 조정액 +5원으로 확정 반영<br>복지할인폭 상향 반영(7-9월 한시적) - [보도자료](https://home.kepco.co.kr/kepco/PR/ntcob/ntcobView.do?pageIndex=1&boardSeq=21057714&boardCd=BRD_000117&menuCd=FN06030103&parnScrpSeq=0&searchCondition=total&searchKeyword=) |
 
 <br>
 
