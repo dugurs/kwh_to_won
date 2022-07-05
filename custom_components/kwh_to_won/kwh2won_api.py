@@ -5,14 +5,14 @@ import logging
 # import pprint
 _LOGGER = logging.getLogger(__name__)
 
-# 로그의 출력 기준 설정
-_LOGGER.setLevel(logging.DEBUG)
-# log 출력 형식
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# log 출력
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-_LOGGER.addHandler(stream_handler)
+# # 로그의 출력 기준 설정
+# _LOGGER.setLevel(logging.DEBUG)
+# # log 출력 형식
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# # log 출력
+# stream_handler = logging.StreamHandler()
+# stream_handler.setFormatter(formatter)
+# _LOGGER.addHandler(stream_handler)
 
 import collections
 from copy import deepcopy
@@ -440,11 +440,11 @@ class kwh2won_api:
             climateWon = round((energy * climatePrice) * seasonDays / monthDays , 2) # 기후환경요금
             climateWonSum += climateWon # 기후환경요금
             self._ret[mm]['basicWon'] = round(basicWon)
-            self._ret[mm]['kwhWon'] = kwhWonSum
+            self._ret[mm]['kwhWon'] = kwhWonSeason
             self._ret[mm]['kwhStep'] = kwhStep
             self._ret[mm]['diffWon'] = diffWon
             self._ret[mm]['climateWon'] = climateWon
-            _LOGGER.debug(f"    시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원, 환경비용차감:-{diffWon}, 기후환경요금:{climateWon}")
+            _LOGGER.debug(f"    시즌요금{round(basicWon)+round(kwhWonSeason)-diffWon+climateWon} = 시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원, 환경비용차감:-{diffWon}, 기후환경요금:{climateWon}")
         basicWonSum = math.floor(basicWonSum) # 기본요금합
         kwhWon = math.floor(kwhWonSum - diffWonSum) # 전력량요금 (원 미만 절사) 
         self._ret['kwhWon'] = kwhWon # 전력량요금(원 미만 절사) 
@@ -602,21 +602,23 @@ class kwh2won_api:
                 season = 'etc'
             dc = calcPrice['dc'][season] # 최대할인액
             _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm} ")
-            # pprint.pprint(dc)
 
             welfareDc_temp = 0
             if (welfareDcCfg >= 2) : # A2
-                welfareDc_temp = welfareDc
-            kwhWonSum = self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['climateWon'] + self._ret['fuelWon']
-            bigfamDc = math.floor((kwhWonSum - elecBasic200Dc - welfareDc_temp) * dc['a2'])
+                welfareDc_temp = self._ret[mm]['welfareDc']
+            fuelWon = math.floor(self._ret['fuelWon'] * self._ret[mm]['useDays'] / self._ret['monthDays'])
+            kwhWonDcLimit = math.floor(self._ret[mm]['basicWon']) + math.floor(self._ret[mm]['kwhWon']) - math.floor(self._ret[mm]['diffWon']) + math.floor(self._ret[mm]['climateWon']) + fuelWon
+            bigfamDc2 = round(dc['a1'] / monthDays * seasonDays *100)/100
+            bigfamDc1 = round((kwhWonDcLimit - elecBasic200Dc - welfareDc_temp) * 0.3)
+            _LOGGER.debug(f"    할인액30%:{bigfamDc1} = (시즌전기요금:{kwhWonDcLimit} - 200kwh이하공제:{elecBasic200Dc} - 복지할인:{welfareDc_temp}) * 30% ")
+
             if (bigfamDcCfg == 1) : # A1
-                if (bigfamDc > dc['a1']) :
-                    bigfamDc = dc['a1']
-                _LOGGER.debug(f"    대가족 요금할인 : {bigfamDc} = 전기요금계({kwhWonSum} - {elecBasic200Dc} - {welfareDc_temp} x {dc['a1']}, 최대 {dc['a2']}")
-            else :
-                _LOGGER.debug(f"    생명유지장치 : {bigfamDc} = 전기요금계 - {elecBasic200Dc} - {welfareDc_temp} x {dc['a1']}")
-            self._ret[mm]['bigfamDc'] = round( bigfamDc / monthDays * seasonDays * 100 ) / 100
-            _LOGGER.debug(f"    일할계산 {self._ret[mm]['bigfamDc']} = {bigfamDc} / {monthDays} * {seasonDays}")
+                _LOGGER.debug(f"    할인한도:{bigfamDc2} = 할인액:{dc['a1']} / 월일수:{monthDays} * 사용일수:{seasonDays} ")
+                if (bigfamDc1 > bigfamDc2) :
+                    bigfamDc1 = bigfamDc2
+    
+            _LOGGER.debug(f"    할인금액:{bigfamDc1} ")
+            self._ret[mm]['bigfamDc'] = bigfamDc1
         self._ret['bigfamDc'] = math.floor( self._ret['mm1']['bigfamDc'] + self._ret['mm2']['bigfamDc'])
         _LOGGER.debug(f"  대가족요금할인 = {self._ret['bigfamDc']}")
 
@@ -716,18 +718,18 @@ class kwh2won_api:
 
 
 
-cfg = {
-    'pressure' : 'low',
-    'checkDay' : 1, # 검침일
-    'today' : datetime.datetime(2022,9,10, 22,42,0), # 오늘
-    # 'today': datetime.datetime.now(),
-    'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-    'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
-}
+# cfg = {
+#     'pressure' : 'low',
+#     'checkDay' : 11, # 검침일
+#     'today' : datetime.datetime(2022,7,10, 22,42,0), # 오늘
+#     # 'today': datetime.datetime.now(),
+#     'bigfamDcCfg' : 2, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
+#     'welfareDcCfg' : 3, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+# }
 
-K2W = kwh2won_api(cfg)
-ret = K2W.kwh2won(400)
-K2W.calc_lengthDays()
-forc = K2W.energy_forecast(17)
-import pprint
-pprint.pprint(ret)
+# K2W = kwh2won_api(cfg)
+# ret = K2W.kwh2won(500)
+# K2W.calc_lengthDays()
+# forc = K2W.energy_forecast(17)
+# # import pprint
+# # pprint.pprint(ret)
