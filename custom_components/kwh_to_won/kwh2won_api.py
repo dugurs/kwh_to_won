@@ -4,14 +4,14 @@ import logging
 # import pprint
 _LOGGER = logging.getLogger(__name__)
 
-# 로그의 출력 기준 설정
-_LOGGER.setLevel(logging.DEBUG)
-# log 출력 형식
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# log 출력
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-_LOGGER.addHandler(stream_handler)
+# # 로그의 출력 기준 설정
+# _LOGGER.setLevel(logging.DEBUG)
+# # log 출력 형식
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# # log 출력
+# stream_handler = logging.StreamHandler()
+# stream_handler.setFormatter(formatter)
+# _LOGGER.addHandler(stream_handler)
 
 import collections
 from copy import deepcopy
@@ -562,9 +562,9 @@ class kwh2won_api:
                 if (welfareDc > dc['b5']) :
                     welfareDc = dc['b5']
                 _LOGGER.debug(f"    차사위계층할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b5']}")
-            self._ret[mm]['welfareDc'] = round( welfareDc / monthDays * seasonDays )
+            self._ret[mm]['welfareDc'] = round( welfareDc / monthDays * seasonDays * 100 ) / 100
             _LOGGER.debug(f"    일할계산 {self._ret[mm]['welfareDc']} = {welfareDc} / {monthDays} * {seasonDays}")
-        self._ret['welfareDc'] = self._ret['mm1']['welfareDc'] + self._ret['mm2']['welfareDc']
+        self._ret['welfareDc'] = math.floor( self._ret['mm1']['welfareDc'] + self._ret['mm2']['welfareDc'] )
         _LOGGER.debug(f"  복지할인 = {self._ret['welfareDc']}")
 
 
@@ -611,9 +611,9 @@ class kwh2won_api:
                 _LOGGER.debug(f"    대가족 요금할인 : {bigfamDc} = 전기요금계({kwhWonSum} - {elecBasic200Dc} - {welfareDc_temp} x {dc['a1']}, 최대 {dc['a2']}")
             else :
                 _LOGGER.debug(f"    생명유지장치 : {bigfamDc} = 전기요금계 - {elecBasic200Dc} - {welfareDc_temp} x {dc['a1']}")
-            self._ret[mm]['bigfamDc'] = round( bigfamDc / monthDays * seasonDays )
+            self._ret[mm]['bigfamDc'] = round( bigfamDc / monthDays * seasonDays * 100 ) / 100
             _LOGGER.debug(f"    일할계산 {self._ret[mm]['bigfamDc']} = {bigfamDc} / {monthDays} * {seasonDays}")
-        self._ret['bigfamDc'] = self._ret['mm1']['bigfamDc'] + self._ret['mm2']['bigfamDc']
+        self._ret['bigfamDc'] = math.floor( self._ret['mm1']['bigfamDc'] + self._ret['mm2']['bigfamDc'])
         _LOGGER.debug(f"  대가족요금할인 = {self._ret['bigfamDc']}")
 
 
@@ -626,7 +626,7 @@ class kwh2won_api:
         bigfamDc = self._ret['bigfamDc']
         welfareDc = self._ret['welfareDc']
         if (welfareDcCfg >= 3) : # 중복할인
-            dcValue = bigfamDc + welfareDc
+            dcValue = math.floor( bigfamDc + welfareDc )
             _LOGGER.debug(f'복지할인 {dcValue} = 대가족 요금할인 {bigfamDc} + 복지 요금할인 {welfareDc} 중복할인')
         else :
             if (bigfamDc > welfareDc) :
@@ -715,10 +715,10 @@ class kwh2won_api:
 # cfg = {
 #     'pressure' : 'low',
 #     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2022,6,20, 22,42,0), # 오늘
+#     'today' : datetime.datetime(2022,7,10, 22,42,0), # 오늘
 #     # 'today': datetime.datetime.now(),
 #     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 4, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
 # }
 
 # K2W = kwh2won_api(cfg)
