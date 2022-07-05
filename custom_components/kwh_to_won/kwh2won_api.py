@@ -1,17 +1,18 @@
 import math
 import datetime
+from dateutil.relativedelta import relativedelta
 import logging
 # import pprint
 _LOGGER = logging.getLogger(__name__)
 
-# # 로그의 출력 기준 설정
-# _LOGGER.setLevel(logging.DEBUG)
-# # log 출력 형식
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# # log 출력
-# stream_handler = logging.StreamHandler()
-# stream_handler.setFormatter(formatter)
-# _LOGGER.addHandler(stream_handler)
+# 로그의 출력 기준 설정
+_LOGGER.setLevel(logging.DEBUG)
+# log 출력 형식
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# log 출력
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+_LOGGER.addHandler(stream_handler)
 
 import collections
 from copy import deepcopy
@@ -459,11 +460,14 @@ class kwh2won_api:
     # 연료비조정액(원미만 절사) : -1,500원
     # 500kWh × -3원 = -1,500원
     # * 연료비조정액은 일수계산 안 함
+    # 요금 산정기준은 검침일인데 6월1일부터6월30일 까지 사용한것을 7월1일 검침하는 것 
     def calc_fuelWon(self) :
-        if (self._ret['mm2']['yymm'] != '') : # 해당월 = 끝나는 일의 월로 계산되는것 같음.
-            priceYymm = self.price_find(self._ret['mm2']['yymm'])
-        else :
-            priceYymm = self.price_find(self._ret['mm1']['yymm'])
+        # 검침 시작일의 한달 후를 구함.
+        d = datetime.date(self._ret['checkYear'], self._ret['checkMonth'], self._ret['checkDay'])
+        d = d + relativedelta(months=1)
+        yymm = d.strftime("%y%m")
+        
+        priceYymm = self.price_find(yymm)
         calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
@@ -712,18 +716,18 @@ class kwh2won_api:
 
 
 
-# cfg = {
-#     'pressure' : 'low',
-#     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2022,7,10, 22,42,0), # 오늘
-#     # 'today': datetime.datetime.now(),
-#     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
-# }
+cfg = {
+    'pressure' : 'low',
+    'checkDay' : 1, # 검침일
+    'today' : datetime.datetime(2022,9,10, 22,42,0), # 오늘
+    # 'today': datetime.datetime.now(),
+    'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
+    'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+}
 
-# K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(400)
-# K2W.calc_lengthDays()
-# forc = K2W.energy_forecast(17)
-# # import pprint
-# # pprint.pprint(ret)
+K2W = kwh2won_api(cfg)
+ret = K2W.kwh2won(400)
+K2W.calc_lengthDays()
+forc = K2W.energy_forecast(17)
+import pprint
+pprint.pprint(ret)
