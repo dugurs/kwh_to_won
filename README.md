@@ -53,6 +53,7 @@
 | v1.2.1  | 2022.02.27  | 사용월 단가 찾기 방식 변경 |
 | v1.2.2  | 2022.07.04  | 22년 7-9월 연료비 조정액 +5원으로 확정 반영<br>복지할인폭 상향 반영(7-9월 한시적) - [보도자료](https://home.kepco.co.kr/kepco/PR/ntcob/ntcobView.do?pageIndex=1&boardSeq=21057714&boardCd=BRD_000117&menuCd=FN06030103&parnScrpSeq=0&searchCondition=total&searchKeyword=) |
 | v1.2.3  | 2022.07.04  | 연료비 조정액 산정시점 수정, 대가족요금 계산 오류 수정 |
+| v1.2.4  | 2022.07.10  | 슈퍼유저 단가 오류 수정 |
 
 <br>
 
