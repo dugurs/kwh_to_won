@@ -31,7 +31,7 @@ def merge(dict1, dict2):
 
 
 CALC_PARAMETER = {
-     'low': {
+    'low': {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
         'kwhPrice' : [98.1, 192.7, 285.4, 704.5],   # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
         'kwhSection': {
@@ -100,21 +100,21 @@ MONTHLY_PRICE = {
     },
     '2204': {
         'low': {
-            'kwhPrice' : [93.2, 187.8, 280.5, 704.5],
+            'kwhPrice' : [93.2, 187.8, 280.5, 709.4],
             'adjustment' : [6.7, 7.3, 0] # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6
         },
         'high': {
-            'kwhPrice' : [78.2, 147.2, 215.5, 569.6],
+            'kwhPrice' : [78.2, 147.2, 215.5, 574.5],
             'adjustment' : [6.7, 7.3, 0]
         }
     },
     '2207': {
         'low': {
-            'kwhPrice' : [93.2, 187.8, 280.5, 704.5], 
+            'kwhPrice' : [93.2, 187.8, 280.5, 709.4], 
             'adjustment' : [6.7, 7.3, 5] # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6, 7월~9월 연료비 조정액 +5원으로 확정
         },
         'high': {
-            'kwhPrice' : [78.2, 147.2, 215.5, 569.6],
+            'kwhPrice' : [78.2, 147.2, 215.5, 574.5],
             'adjustment' : [6.7, 7.3, 5]
         },
         'dc': {
@@ -140,11 +140,11 @@ MONTHLY_PRICE = {
     },
     '2210': {
         'low': {
-            'kwhPrice' : [98.1, 192.7, 285.4, 704.5],
+            'kwhPrice' : [98.1, 192.7, 285.4, 714.3],
             'adjustment' : [6.7, 7.3, 0]
         },
         'high': {
-            'kwhPrice' : [83.1, 152.1, 220.4, 569.6],
+            'kwhPrice' : [83.1, 152.1, 220.4, 579.4],
             'adjustment' : [6.7, 7.3, 0]
         }
     }
@@ -385,8 +385,6 @@ class kwh2won_api:
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
         basicPrice = CALC_PARAMETER[pressure]['basicPrice'] # 기본요금(원/호)
-        # kwhPrice = CALC_PARAMETER[pressure]['kwhPrice'] # 전력량 단가(원/kWh)
-        # diffPrice = CALC_PARAMETER[pressure]['adjustment'][0] # 환경비용차감 단가
         monthDays = self._ret['monthDays'] # 월일수
         basicWonSum = 0
         kwhWonSum = 0
