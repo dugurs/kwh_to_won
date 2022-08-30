@@ -13,7 +13,8 @@
                     "pressure_config": "Please select the contract purpose",
                     "bigfam_dc_config": "Discount Select Applicable (Large Families)",
                     "welfare_dc_config": "Discount Select Applicable (Welfare)",
-                    "prev_energy_entity": "Select a previous month's electricity usage sensor"
+                    "prev_energy_entity": "Select a previous month's electricity usage sensor",
+                    "calibration_config": "calibration factor. If 0 it is not used. (Actual usage / Measured usage = Calibration factor)"
                 }
             }
 
@@ -35,7 +36,8 @@
                     "pressure_config": "Please select the contract purpose",
                     "bigfam_dc_config": "Discount Select Applicable (Large Families)",
                     "welfare_dc_config": "Discount Select Applicable (Welfare)",
-                    "prev_energy_entity": "Select a previous month's electricity usage sensor"
+                    "prev_energy_entity": "Select a previous month's electricity usage sensor",
+                    "calibration_config": "calibration factor. If 0 it is not used. (Actual usage / Measured usage = Calibration factor)"
                 }
             }
         },

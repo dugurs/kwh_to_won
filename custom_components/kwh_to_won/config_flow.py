@@ -1,5 +1,6 @@
 """Config flow for Damda Weather integration."""
 from __future__ import annotations
+from tokenize import Number
 from urllib.parse import quote_plus, unquote
 from homeassistant.const import CONF_NAME, CONF_DEVICE_CLASS, DEVICE_CLASS_ENERGY, ATTR_UNIT_OF_MEASUREMENT, ENERGY_KILO_WATT_HOUR
 import voluptuous as vol
@@ -18,7 +19,8 @@ OPTION_LIST = [
     ("pressure_config", "low", vol.In(PRESSURE_OPTION)),
     ("bigfam_dc_config", 0, vol.In(BIGFAM_DC_OPTION)),
     ("welfare_dc_config", 0, vol.In(WELFARE_DC_OPTION)),
-    ("prev_energy_entity", "", str)
+    ("prev_energy_entity", "", str),
+    ("calibration_config", 0, vol.All(vol.Coerce(float), vol.Range(min=0, max=2)))
 ]
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

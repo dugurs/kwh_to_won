@@ -13,7 +13,8 @@
                     "pressure_config": "사용용도를 선택하세요",
                     "bigfam_dc_config": "할인 해당사항을 선택하세요 (대가족)",
                     "welfare_dc_config": "할인 해당사항을 선택하세요 (복지)",
-                    "prev_energy_entity": "전월 전기 사용량 센서를 선택하세요"
+                    "prev_energy_entity": "전월 전기 사용량 센서를 선택하세요",
+                    "calibration_config": "사용량 보정계수. 0이면 사용안함. (실제사용량 / 측정사용량 = 보정계수)"
                 }
             }
 
@@ -36,7 +37,8 @@
                     "pressure_config": "사용용도를 선택하세요",
                     "bigfam_dc_config": "할인 해당사항을 선택하세요 (대가족)",
                     "welfare_dc_config": "할인 해당사항을 선택하세요 (복지)",
-                    "prev_energy_entity": "전월 전기 사용량 센서를 선택하세요"
+                    "prev_energy_entity": "전월 전기 사용량 센서를 선택하세요",
+                    "calibration_config": "사용량 보정계수. 0이면 사용안함. (실제사용량 / 측정사용량 = 보정계수)"
                 }
             }
         },

@@ -54,6 +54,7 @@
 | v1.2.2  | 2022.07.04  | 22년 7-9월 연료비 조정액 +5원으로 확정 반영<br>복지할인폭 상향 반영(7-9월 한시적) - [보도자료](https://home.kepco.co.kr/kepco/PR/ntcob/ntcobView.do?pageIndex=1&boardSeq=21057714&boardCd=BRD_000117&menuCd=FN06030103&parnScrpSeq=0&searchCondition=total&searchKeyword=) |
 | v1.2.3  | 2022.07.04  | 연료비 조정액 산정시점 수정, 대가족요금 계산 오류 수정 |
 | v1.2.4  | 2022.07.10  | 슈퍼유저 단가 오류 수정 |
+| v1.2.5  | 2022.08.30  | 보정계수 추가 |
 
 <br>
 
@@ -84,19 +85,16 @@ utility_meter:
       days: 10
 ```
 <br>
-- 전월 사용량 센서는 다음과 같이 만들수 있습니다.(참고)
-
+- 전월 사용량 센서는 다음과 같이 만들수 있습니다. [`template`](https://www.home-assistant.io/integrations/template/)
 ```
-sensor:
-  - platform: template
-    sensors:
-      pzemac_energy_prev_monthly:
-        friendly_name: "전력 전월 사용량"
+template:
+  - sensor:
+      - name: "pzemac_energy_prev_monthly"
+        unique_id: pzemac_energy_prev_monthly
         unit_of_measurement: kWh
-        value_template: "{{ state_attr('sensor.pzemac_energy_monthly','last_period') |round(1) }}"
+        state: "{{ state_attr('sensor.pzemac_energy_monthly','last_period') |round(1) }}"
         device_class: energy
-        attribute_templates:
-          state_class: total_increasing
+        state_class: total_increasing
 ```
 
 ### 통합구성요소 추가
@@ -111,6 +109,9 @@ sensor:
   - `sensor.test_kwhto_forecast_won` 예상 전기요금 센서
 - 전월 사용량 센서를 선택 했다면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
   - `sensor.test_kwhto_won_prev` 전월 전기요금 센서
+- 보정계수를 0보다 크게 설정하면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
+  - `sensor.test_kwhto_kwh` 전기사용량 센서
+  - 보정계수 = 실제(검침)사용량 / 측정(센서)사용량
 
 <br>
 
@@ -125,3 +126,5 @@ sensor:
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
   위 통합구성요소를 기반으로 작성되었습니다.
+- https://developers.home-assistant.io/docs/creating_component_index
+- https://github.com/home-assistant/core/tree/dev/homeassistant/helpers

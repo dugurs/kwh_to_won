@@ -34,6 +34,7 @@ SENSOR_TYPES = {
     'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
     'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
     'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
+    'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
 }
 
 
@@ -51,6 +52,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     bigfam_dc_config = int(config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config")))
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
     prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
+    calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
 
     hass.data[DOMAIN]["listener"] = []
 
@@ -62,21 +64,24 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
                 continue
             else:
                 energy_entity = prev_energy_entity
+        elif sensor_type == "kwhto_kwh":
+            if calibration_config == None or calibration_config == 0:
+                continue
         new_devices.append(
-                ExtendSensor(
-                        hass,
-                        device,
-                        energy_entity,
-                        checkday_config,
-                        pressure_config,
-                        bigfam_dc_config,
-                        welfare_dc_config,
-                        sensor_type,
-                        device.device_id + sensor_type
-                        
-                )
+            ExtendSensor(
+                hass,
+                device,
+                energy_entity,
+                checkday_config,
+                pressure_config,
+                bigfam_dc_config,
+                welfare_dc_config,
+                calibration_config,
+                sensor_type,
+                device.device_id + sensor_type
+            )
         )
-
+        
     if new_devices:
         async_add_devices(new_devices)
 
@@ -174,7 +179,9 @@ class ExtendSensor(SensorBase):
                         pressure_config,
                         bigfam_dc_config,
                         welfare_dc_config,
-                        sensor_type, unique_id):
+                        calibration_config,
+                        sensor_type,
+                        unique_id):
         """Initialize the sensor."""
         super().__init__(device)
 
@@ -183,6 +190,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._state = None
         self._sensor_type = sensor_type
+        self._calibration = calibration_config
         self._unique_id = unique_id
         self._device = device
         self._entity_picture = None
@@ -282,7 +290,21 @@ class ExtendSensor(SensorBase):
     def update(self):
         """Update the state."""
         if (self._energy != None) :
-            if self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
+            if self._calibration > 0: # 보정계수가 적용
+                self._energy_row = self._energy
+                self._energy = self._energy * self._calibration
+
+            if self._sensor_type == "kwhto_kwh": # 보정된 에너지 값 센서
+                self._state = self._energy
+                self._extra_state_attributes['측정사용량'] = self._energy_row
+                self._extra_state_attributes['보정계수'] = self._calibration
+                self._extra_state_attributes['state_class'] = 'total_increasing'
+                self._extra_state_attributes['unit_of_measurement'] = 'kWh'
+                self._extra_state_attributes['device_class'] = 'energy'
+                self._extra_state_attributes['icon'] = 'mdi:counter'
+                if self._energy < self._prev_energy :
+                    self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+            elif self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
                 # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                 forcest = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
                 self._state = forcest['forcest']
