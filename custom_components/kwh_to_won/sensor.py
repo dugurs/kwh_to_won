@@ -292,7 +292,7 @@ class ExtendSensor(SensorBase):
         if (self._energy != None) :
             if self._calibration > 0: # 보정계수가 적용
                 self._energy_row = self._energy
-                self._energy = self._energy * self._calibration
+                self._energy = round(self._energy * self._calibration , 2)
 
             if self._sensor_type == "kwhto_kwh": # 보정된 에너지 값 센서
                 self._state = self._energy
