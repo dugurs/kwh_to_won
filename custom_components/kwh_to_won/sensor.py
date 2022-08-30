@@ -30,11 +30,11 @@ _LOGGER = logging.getLogger(__name__)
 
 # 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
+    'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
     'kwhto_won': ['전기 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
     'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
     'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
     'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
-    'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
 }
 
 
@@ -205,6 +205,7 @@ class ExtendSensor(SensorBase):
 
         self._energy_entity = energy_entity # energy 엔터티
         self._energy = None
+        self._energy_row = None
 
         cfg = {
             'pressure' : pressure_config, # 저압고압
@@ -217,6 +218,7 @@ class ExtendSensor(SensorBase):
 
         # async_track_state_change(self.hass, self._energy_entity, self.energy_state_listener)
         self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
+        self._energy_row = self._energy
 
         self.hass.states.get(self._energy_entity)
         self.update()
@@ -233,6 +235,7 @@ class ExtendSensor(SensorBase):
         """Handle temperature device state changes."""
         if _is_valid_state(new_state):
             self._energy = util.convert(new_state.state, float)
+            self._energy_row = self._energy
         self.async_schedule_update_ha_state(True)
 
 
@@ -291,17 +294,12 @@ class ExtendSensor(SensorBase):
         """Update the state."""
         if (self._energy != None) :
             if self._calibration > 0: # 보정계수가 적용
-                self._energy_row = self._energy
-                self._energy = round(self._energy * self._calibration , 2)
+                self._energy = round(self._energy_row * self._calibration , 1)
 
             if self._sensor_type == "kwhto_kwh": # 보정된 에너지 값 센서
                 self._state = self._energy
                 self._extra_state_attributes['측정사용량'] = self._energy_row
                 self._extra_state_attributes['보정계수'] = self._calibration
-                self._extra_state_attributes['state_class'] = 'total_increasing'
-                self._extra_state_attributes['unit_of_measurement'] = 'kWh'
-                self._extra_state_attributes['device_class'] = 'energy'
-                self._extra_state_attributes['icon'] = 'mdi:counter'
                 if self._energy < self._prev_energy :
                     self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
             elif self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
