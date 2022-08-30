@@ -21,7 +21,7 @@
 <br>
 
 ## 스크린샷
-![screen1-1.jpg](https://dugurs.github.io/kwh_to_won/images/screen1-1.jpg)<br>
+![kwh2won](https://user-images.githubusercontent.com/41262994/187405383-2b369903-6a5e-4ed8-9eae-e1ab71b434ab.jpg)<br>
 ![screen1-0.jpg](https://dugurs.github.io/kwh_to_won/images/screen1-0.jpg)
 ![screen1-2.jpg](https://dugurs.github.io/kwh_to_won/images/screen1-2.jpg)
 ![screen1-3.jpg](https://dugurs.github.io/kwh_to_won/images/screen1-3.jpg)
@@ -75,7 +75,9 @@
 ### 월간 누적 사용량 센서 및 전월 사용량 센서
 - 검침일에 맞줘 카운팅되는 월간 누적 사용량 센서가 있어야 합니다.
 - 없다면 아래와같이 [`utility_meter`](https://www.home-assistant.io/integrations/utility_meter/)를 이용해 만들어줘야 합니다.
+
 ```
+
 # 매달 11일 0시 0분에 리셋 (검침 시작일 11일)
 utility_meter:
   pzemac_energy_monthly:
@@ -83,9 +85,13 @@ utility_meter:
     cycle: monthly
     offset:
       days: 10
+      
 ```
 <br>
-- 전월 사용량 센서는 다음과 같이 만들수 있습니다. [`template`](https://www.home-assistant.io/integrations/template/)
+
+- 전월 사용량 센서는 다음과 같이 만들수 있습니다. [`template`](https://www.home-assistant.io/integrations/template/) 
+
+
 ```
 template:
   - sensor:
