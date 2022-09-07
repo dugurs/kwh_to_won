@@ -2,17 +2,16 @@ import math
 import datetime
 from dateutil.relativedelta import relativedelta
 import logging
-# import pprint
 _LOGGER = logging.getLogger(__name__)
 
-# # 로그의 출력 기준 설정
-# _LOGGER.setLevel(logging.DEBUG)
-# # log 출력 형식
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# # log 출력
-# stream_handler = logging.StreamHandler()
-# stream_handler.setFormatter(formatter)
-# _LOGGER.addHandler(stream_handler)
+# 로그의 출력 기준 설정
+_LOGGER.setLevel(logging.DEBUG)
+# log 출력 형식
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# log 출력
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+_LOGGER.addHandler(stream_handler)
 
 import collections
 from copy import deepcopy
@@ -200,6 +199,7 @@ class kwh2won_api:
                 'kwhStep': 0,    # 누진단계
                 'welfareDc': 0,  # 복지할인
                 'bigfamDc': 0,   # 대가족할인
+                'elecBasicDc': 0, # 필수사용량보장공제
             },
             'mm2' : {
                 'yymm': '',     # 사용년월
@@ -213,6 +213,7 @@ class kwh2won_api:
                 'kwhStep': 0,    # 누진단계
                 'welfareDc': 0,  # 복지할인
                 'bigfamDc': 0,   # 대가족할인
+                'elecBasicDc': 0, # 필수사용량보장공제
             },
             'basicWon': 0,   # 기본요금
             'kwhWon': 0,     # 전력량요금
@@ -502,19 +503,27 @@ class kwh2won_api:
     # 가정용 저압 [200kWh 이하, 최대 2,000원]
     # 가정용 고압, 복지할인시 [200kWh 이하, 2,500원]
     # (기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액) - 1000
+    # 일할
     def calc_elecBasic(self) :
-        priceYymm = self.price_find(self._ret['mm1']['yymm'])
-        calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
-        energy = self._ret['energy'] # 사용전력
-        pressure = self._ret['pressure'] # 계약전력
-        elecBasicLimit = calcPrice[pressure]['elecBasicLimit'] # 최대할인액
-        elecBasic = 200
-        if (energy <= elecBasic) :
-            elecBasicDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['diffWon'] + self._ret['fuelWon'] - 1000)
-            if elecBasicDc > elecBasicLimit :
-                elecBasicDc = elecBasicLimit
-            self._ret['elecBasicDc'] = elecBasicDc
-            _LOGGER.debug(f"필수사용량 보장공제:{elecBasicDc} = {elecBasicLimit} or 기본요금합:{self._ret['basicWon']}원, 전력량요금합:{self._ret['kwhWon']}원, 환경비용차감:{self._ret['diffWon']}원 - 1000")
+        for mm in ['mm1','mm2'] :
+            seasonDays = self._ret[mm]['useDays'] # 사용일수
+            if (seasonDays == 0) :
+                continue
+            priceYymm = self.price_find(self._ret[mm]['yymm'])
+            calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
+            monthDays = self._ret['monthDays'] # 월일수
+            energy = self._ret['energy'] # 사용전력
+            pressure = self._ret['pressure'] # 계약전력
+            elecBasicLimit = calcPrice[pressure]['elecBasicLimit'] # 최대할인액
+            elecBasic = 200
+            if (elecBasicLimit > 0 and energy <= elecBasic) :
+                elecBasicDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['diffWon'] + self._ret['fuelWon'] - 1000)
+                if elecBasicDc > elecBasicLimit :
+                    elecBasicDc = elecBasicLimit
+                elecBasicDc = math.floor(elecBasicDc * seasonDays / monthDays * 100) / 100
+                _LOGGER.debug(f"필수사용량 보장공제:{elecBasicDc} = {elecBasicLimit} or (기본요금합:{self._ret['basicWon']}원, 전력량요금합:{self._ret['kwhWon']}원, 환경비용차감:{self._ret['diffWon']}원 - 1000) * {seasonDays} / {monthDays}") 
+                self._ret[mm]['elecBasicDc'] = elecBasicDc
+        self._ret['elecBasicDc'] = math.floor(self._ret['mm1']['elecBasicDc'] + self._ret['mm2']['elecBasicDc'])
 
 
     # 200kWh 이하 감액(원미만 절사) = 저압 4,000  고압 2,500
@@ -738,18 +747,18 @@ class kwh2won_api:
 
 
 
-# cfg = {
-#     'pressure' : 'low',
-#     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2022,7,10, 22,42,0), # 오늘
-#     # 'today': datetime.datetime.now(),
-#     'bigfamDcCfg' : 2, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 3, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
-# }
+cfg = {
+    'pressure' : 'low',
+    'checkDay' : 11, # 검침일
+    'today' : datetime.datetime(2022,7,10, 22,42,0), # 오늘
+    # 'today': datetime.datetime.now(),
+    'bigfamDcCfg' : 0, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
+    'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+}
 
-# K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(500)
-# K2W.calc_lengthDays()
-# forc = K2W.energy_forecast(17)
+K2W = kwh2won_api(cfg)
+ret = K2W.kwh2won(200)
+K2W.calc_lengthDays()
+forc = K2W.energy_forecast(17)
 # # import pprint
 # # pprint.pprint(ret)
