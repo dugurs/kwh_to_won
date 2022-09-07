@@ -81,41 +81,61 @@ MONTHLY_PRICE = {
     '2101': {
         'low': {
             'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
-            'adjustment' : [5, 5.3, -3] # 환경비용차감 + 기후환경요금 + 연료비조정액
+            'adjustment' : [5, 5.3, -3], # 환경비용차감 + 기후환경요금 + 연료비조정액
+            'elecBasicLimit' : 4000
         },
         'high': {
             'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
-            'adjustment' : [5, 5.3, -3]
+            'adjustment' : [5, 5.3, -3],
+            'elecBasicLimit' : 2500
+        }
+    },
+    '2101': {
+        'low': {
+            'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
+            'adjustment' : [5, 5.3, -3], # 환경비용차감 + 기후환경요금 + 연료비조정액
+            'elecBasicLimit' : 4000
+        },
+        'high': {
+            'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
+            'adjustment' : [5, 5.3, -3],
+            'elecBasicLimit' : 2500
         }
     },
     '2109': {
         'low': {
             'kwhPrice' : [88.3, 182.9, 275.6, 704.5],
-            'adjustment' : [5, 5.3, 0] # RPS 4.5 + ETS 0.5 + 석탄발전 감축비용 0.3
+            'adjustment' : [5, 5.3, 0], # RPS 4.5 + ETS 0.5 + 석탄발전 감축비용 0.3
+            'elecBasicLimit' : 2000
         },
         'high': {
             'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
-            'adjustment' : [5, 5.3, 0]
+            'adjustment' : [5, 5.3, 0],
+            'elecBasicLimit' : 1500
         }
     },
     '2204': {
         'low': {
             'kwhPrice' : [93.2, 187.8, 280.5, 709.4],
-            'adjustment' : [6.7, 7.3, 0] # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6
+            'adjustment' : [6.7, 7.3, 0], # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6
+            'elecBasicLimit' : 2000
         },
         'high': {
             'kwhPrice' : [78.2, 147.2, 215.5, 574.5],
-            'adjustment' : [6.7, 7.3, 0]
+            'adjustment' : [6.7, 7.3, 0],
+            'elecBasicLimit' : 1500
         }
     },
     '2207': {
         'low': {
             'kwhPrice' : [93.2, 187.8, 280.5, 709.4], 
-            'adjustment' : [6.7, 7.3, 5] # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6, 7월~9월 연료비 조정액 +5원으로 확정
+            'adjustment' : [6.7, 7.3, 5], # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6, 7월~9월 연료비 조정액 +5원으로 확정
+            'elecBasicLimit' : 0,
         },
         'high': {
             'kwhPrice' : [78.2, 147.2, 215.5, 574.5],
-            'adjustment' : [6.7, 7.3, 5]
+            'adjustment' : [6.7, 7.3, 5],
+            'elecBasicLimit' : 0,
         },
         'dc': {
             'etc': {
@@ -141,11 +161,13 @@ MONTHLY_PRICE = {
     '2210': {
         'low': {
             'kwhPrice' : [98.1, 192.7, 285.4, 714.3],
-            'adjustment' : [6.7, 7.3, 0]
+            'adjustment' : [6.7, 7.3, 0],
+            'elecBasicLimit' : 0,
         },
         'high': {
             'kwhPrice' : [83.1, 152.1, 220.4, 579.4],
-            'adjustment' : [6.7, 7.3, 0]
+            'adjustment' : [6.7, 7.3, 0],
+            'elecBasicLimit' : 0,
         }
     }
 }
@@ -242,7 +264,7 @@ class kwh2won_api:
         useDays = self._ret['useDays']
         monthDays = self._ret['monthDays']
 
-        forcest = round(energy / ((((useDays - 1) * 24) + today.hour) * 60 + today.minute + 1) * (monthDays * 24 * 60 + 1), 1)
+        forcest = round(energy / ((((useDays - 1) * 24) + today.hour) * 60 + today.minute + 1) * (monthDays * 24 * 60), 1)
         _LOGGER.debug(f"########### 예상사용량:{forcest}, 월길이 {monthDays}, 사용일 {useDays}, 검침일 {checkDay}, 오늘 {today.day}")
         return {
             'forcest': forcest,
