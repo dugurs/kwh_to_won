@@ -1,4 +1,4 @@
-# 전기요금계산 센서 for HA
+# 전기요금계산 센서 (가정용) for HomeAssistant
 
 ## 주요기능
 - 전기요금 계산 센서
@@ -44,6 +44,25 @@
 <br>
 
 ## 사용
+
+### 통합구성요소 추가
+- 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
+- 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
+  - `device_class: energy`, `state_class: total_increasing`, `unit_of_measurement: kWh`
+
+### 생성되는 센서
+- 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
+  - `sensor.test_kwhto_won` 전기요금 센서
+  - `sensor.test_kwhto_forecast` 예상 사용량 센서
+  - `sensor.test_kwhto_forecast_won` 예상 전기요금 센서
+- 전월 사용량 센서를 선택 했다면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
+  - `sensor.test_kwhto_won_prev` 전월 전기요금 센서
+- 보정계수를 0보다 크게 설정하면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
+  - `sensor.test_kwhto_kwh` 전기사용량 센서
+  - 보정계수 = 실제(검침)사용량 / 측정(센서)사용량
+
+<br>
+
 ### 월간 누적 사용량 센서 및 전월 사용량 센서
 - 검침일에 맞줘 카운팅되는 월간 누적 사용량 센서가 있어야 합니다.
 - 없다면 아래와같이 [`utility_meter`](https://www.home-assistant.io/integrations/utility_meter/)를 이용해 만들어줘야 합니다.
@@ -75,23 +94,6 @@ template:
         state_class: total_increasing
 ```
 
-### 통합구성요소 추가
-- 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
-- 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `device_class: energy`, `state_class: total_increasing`, `unit_of_measurement: kWh`
-
-### 생성되는 센서
-- 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
-  - `sensor.test_kwhto_won` 전기요금 센서
-  - `sensor.test_kwhto_forecast` 예상 사용량 센서
-  - `sensor.test_kwhto_forecast_won` 예상 전기요금 센서
-- 전월 사용량 센서를 선택 했다면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
-  - `sensor.test_kwhto_won_prev` 전월 전기요금 센서
-- 보정계수를 0보다 크게 설정하면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
-  - `sensor.test_kwhto_kwh` 전기사용량 센서
-  - 보정계수 = 실제(검침)사용량 / 측정(센서)사용량
-
-<br>
 
 ## 보완 예정 사항
 - 
@@ -130,7 +132,7 @@ template:
 | v1.2.3  | 2022.07.04  | 연료비 조정액 산정시점 수정, 대가족요금 계산 오류 수정 |
 | v1.2.4  | 2022.07.10  | 슈퍼유저 단가 오류 수정 |
 | v1.2.5  | 2022.08.30  | 보정계수 추가 |
-| v1.2.6  | 2022.09.07  | 필수사용량공제 폐지 적용, 예측사용량 분단위로 수정 for[@beowulf](https://github.com/dugurs/kwh_to_won/commit/7169840069ebab595a3cc4e3f813df20790fe247)   |
+| v1.2.6  | 2022.09.07  | 필수사용량공제 폐지 적용, 예측사용량 분단위로 수정 [@beowulf](https://github.com/dugurs/kwh_to_won/commit/7169840069ebab595a3cc4e3f813df20790fe247)   |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>

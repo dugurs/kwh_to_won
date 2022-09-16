@@ -1,5 +1,5 @@
 {
-    "name": "[KR] 전기요금 계산기",
+    "name": "[KR] 전기요금 계산 센서 (가정용)",
     "country": "KR",
     "domains": ["sensor"],
     "render_readme": true
