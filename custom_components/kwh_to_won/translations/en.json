@@ -1,5 +1,5 @@
 {
-    "title": "Electricity bill sensor",
+    "title": "Electricity bill sensor (home)",
     "config": {
         "step": {
             "confirm": {
@@ -29,7 +29,7 @@
     "options": {
         "step": {
             "init": {
-                "title": "Electricity bill sensor option",
+                "title": "Electricity bill sensor (home)",
                 "data": {
                     "energy_entity": "Select a monthly electricity usage sensor",
                     "checkday_config": "Please select the reading date",
