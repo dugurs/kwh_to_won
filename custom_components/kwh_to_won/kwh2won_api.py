@@ -29,7 +29,7 @@ def merge(dict1, dict2):
 # https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp
 
 
-CALC_PARAMETER = {
+PRICE_BASE = {
     'low': {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
         'kwhPrice' : [98.1, 192.7, 285.4, 704.5],   # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
@@ -38,7 +38,6 @@ CALC_PARAMETER = {
             'winter' : [200, 400, 1000, 10000],    # 구간(kWh - 동계)
             'summer' : [300, 450, 1000, 10000]   # 구간(kWh - 하계)(7~8월)
         },
-        'adjustment' : [6.7, 7.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
         'elecBasicLimit' : 2000,     # 필수사용공제
         'elecBasic200Limit' : 4000   # 200kWh이하 감액
     },
@@ -50,10 +49,10 @@ CALC_PARAMETER = {
             'winter' : [200, 400, 1000, 10000],   # 구간(kWh - 동계)
             'summer' : [300, 450, 1000, 10000], # 구간(kWh - 하계)(7~8월)
         },
-        'adjustment' : [6.7, 7.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액(21년8월 까지는 -3원)
         'elecBasicLimit' : 1500,     # 필수사용공제
         'elecBasic200Limit' : 2500   # 200kWh이하 감액
     },
+    'adjustment' : [6.7, 7.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액
     'dc': {
         'etc': {
             'a1': 16000, # 5인이상 가구,출산가구,3자녀이상 가구
@@ -76,66 +75,52 @@ CALC_PARAMETER = {
     }
 }
 
-MONTHLY_PRICE = {
+
+# 환경비용차감 + 기후환경요금 + 연료비조정액
+PRICE_ADJUSTMENT = {
+    '2101': { 'adjustment' : [5, 5.3, -3] },
+    '2109': { 'adjustment' : [5, 5.3, 0] }, # RPS 4.5 + ETS 0.5 + 석탄발전 감축비용 0.3
+    '2204': { 'adjustment' : [6.7, 7.3, 0] }, # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6
+    '2207': { 'adjustment' : [6.7, 7.3, 5] }, # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6, 7월~9월 연료비 조정액 +5원으로 확정
+    '2210': { 'adjustment' : [6.7, 7.3, 0] },
+}
+
+# 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
+PRICE_KWH = {
     '2101': {
-        'low': {
-            'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
-            'adjustment' : [5, 5.3, -3], # 환경비용차감 + 기후환경요금 + 연료비조정액
-            'elecBasicLimit' : 4000
-        },
-        'high': {
-            'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
-            'adjustment' : [5, 5.3, -3],
-            'elecBasicLimit' : 2500
-        }
-    },
-    '2101': {
-        'low': {
-            'kwhPrice' : [88.3, 182.9, 275.6, 704.5], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
-            'adjustment' : [5, 5.3, -3], # 환경비용차감 + 기후환경요금 + 연료비조정액
-            'elecBasicLimit' : 4000
-        },
-        'high': {
-            'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
-            'adjustment' : [5, 5.3, -3],
-            'elecBasicLimit' : 2500
-        }
-    },
-    '2109': {
-        'low': {
-            'kwhPrice' : [88.3, 182.9, 275.6, 704.5],
-            'adjustment' : [5, 5.3, 0], # RPS 4.5 + ETS 0.5 + 석탄발전 감축비용 0.3
-            'elecBasicLimit' : 2000
-        },
-        'high': {
-            'kwhPrice' : [73.3, 142.3, 210.6, 569.6],
-            'adjustment' : [5, 5.3, 0],
-            'elecBasicLimit' : 1500
-        }
+        'low':  { 'kwhPrice' : [88.3, 182.9, 275.6, 704.5] },
+        'high': { 'kwhPrice' : [73.3, 142.3, 210.6, 569.6] }
     },
     '2204': {
-        'low': {
-            'kwhPrice' : [93.2, 187.8, 280.5, 709.4],
-            'adjustment' : [6.7, 7.3, 0], # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6
-            'elecBasicLimit' : 2000
-        },
-        'high': {
-            'kwhPrice' : [78.2, 147.2, 215.5, 574.5],
-            'adjustment' : [6.7, 7.3, 0],
-            'elecBasicLimit' : 1500
-        }
+        'low':  { 'kwhPrice' : [93.2, 187.8, 280.5, 709.4] },
+        'high': { 'kwhPrice' : [78.2, 147.2, 215.5, 574.5] }
+    },
+    '2210': {
+        'low':  { 'kwhPrice' : [98.1, 192.7, 285.4, 714.3] },
+        'high': { 'kwhPrice' : [83.1, 152.1, 220.4, 579.4] }
+    }
+}
+
+# 필수사용량보장공제
+PRICE_ELECBASIC = {
+    '2101': {
+        'low':  { 'elecBasicLimit' : 4000 },
+        'high': { 'elecBasicLimit' : 2500 }
+    },
+    '2109': {
+        'low':  { 'elecBasicLimit' : 2000 },
+        'high': { 'elecBasicLimit' : 1500 }
     },
     '2207': {
-        'low': {
-            'kwhPrice' : [93.2, 187.8, 280.5, 709.4], 
-            'adjustment' : [6.7, 7.3, 5], # RPS 5.9 + ETS 0.8 + 석탄발전 감축비용 0.6, 7월~9월 연료비 조정액 +5원으로 확정
-            'elecBasicLimit' : 0,
-        },
-        'high': {
-            'kwhPrice' : [78.2, 147.2, 215.5, 574.5],
-            'adjustment' : [6.7, 7.3, 5],
-            'elecBasicLimit' : 0,
-        },
+        'low':  { 'elecBasicLimit' : 0, },
+        'high': { 'elecBasicLimit' : 0, },
+    },
+}
+
+# 할인
+PRICE_DC = {
+    '2101': {},
+    '2207': {
         'dc': {
             'etc': {
                 'a1': 22000, # 5인이상 가구,출산가구,3자녀이상 가구
@@ -157,20 +142,8 @@ MONTHLY_PRICE = {
             }
         }
     },
-    '2210': {
-        'low': {
-            'kwhPrice' : [98.1, 192.7, 285.4, 714.3],
-            'adjustment' : [6.7, 7.3, 0],
-            'elecBasicLimit' : 0,
-        },
-        'high': {
-            'kwhPrice' : [83.1, 152.1, 220.4, 579.4],
-            'adjustment' : [6.7, 7.3, 0],
-            'elecBasicLimit' : 0,
-        }
-    }
+    '2210': {}
 }
-
 
 
 class kwh2won_api:
@@ -235,9 +208,9 @@ class kwh2won_api:
 
 
     # 당월 단가 찾기
-    def price_find(self, yymm):
+    def price_find(self, prices, yymm):
         cnt = -1
-        listym = list(MONTHLY_PRICE.keys())
+        listym = list(prices.keys())
         for ym in listym :
             if ym <= yymm:
                 cnt += 1
@@ -370,12 +343,17 @@ class kwh2won_api:
                 etc += monthleng
                 season = 'etc'
             yymm = ((year-2000)*100) + month
-            self._ret[mm]['yymm'] = f'{yymm}'
+            yymm = f'{yymm}'
+            self._ret[mm]['yymm'] = yymm
             self._ret[mm]['season'] = season
             self._ret[mm]['useDays'] = monthleng
 
-            priceYymm = self.price_find(f'{yymm}')
-            mmdiff.append(season + priceYymm)
+            adjustYymm = self.price_find(PRICE_ADJUSTMENT, yymm)
+            kwhYymm = self.price_find(PRICE_KWH, yymm)
+            elecbacictYymm = self.price_find(PRICE_ELECBASIC, yymm)
+            dcYymm = self.price_find(PRICE_DC, yymm)
+            _LOGGER.debug(f'{mm} : season{season} + adjust{adjustYymm} + kwh{kwhYymm} + elecbacict{elecbacictYymm} + dc{dcYymm}')
+            mmdiff.append(season + adjustYymm + kwhYymm + elecbacictYymm + dcYymm)
 
         # 시즌이 같고, 단가가 같으면 사용일을 하나로 합치기
         if mmdiff[0] == mmdiff[1] :
@@ -407,7 +385,7 @@ class kwh2won_api:
 
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
-        basicPrice = CALC_PARAMETER[pressure]['basicPrice'] # 기본요금(원/호)
+        basicPrice = PRICE_BASE[pressure]['basicPrice'] # 기본요금(원/호)
         monthDays = self._ret['monthDays'] # 월일수
         basicWonSum = 0
         kwhWonSum = 0
@@ -421,10 +399,12 @@ class kwh2won_api:
             if (seasonDays == 0) :
                 continue
             yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm = self.price_find(yymm)
-            calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
-            diffPrice = calcPrice[pressure]['adjustment'][0] # 환경비용차감 단가
-            climatePrice = calcPrice[pressure]['adjustment'][1] # 기후환경요금 단가
+            priceYymm = self.price_find(PRICE_ADJUSTMENT, yymm)
+            calcPrice = merge(PRICE_BASE, PRICE_ADJUSTMENT[priceYymm])
+            priceYymm = self.price_find(PRICE_KWH, yymm)
+            calcPrice = merge(calcPrice, PRICE_KWH[priceYymm])
+            diffPrice = calcPrice['adjustment'][0] # 환경비용차감 단가
+            climatePrice = calcPrice['adjustment'][1] # 기후환경요금 단가
             kwhPrice = calcPrice[pressure]['kwhPrice'] # 전력량 단가(원/kWh)
             season = self._ret[mm]['season'] # 사용연월
             kwhSection = calcPrice[pressure]['kwhSection'][season] # 누진구간(kWh)
@@ -488,11 +468,10 @@ class kwh2won_api:
         d = d + relativedelta(months=1)
         yymm = d.strftime("%y%m")
         
-        priceYymm = self.price_find(yymm)
-        calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
+        priceYymm = self.price_find(PRICE_ADJUSTMENT, yymm)
+        calcPrice = merge(PRICE_BASE, PRICE_ADJUSTMENT[priceYymm])
         energy = self._ret['energy'] # 사용전력
-        pressure = self._ret['pressure'] # 계약전력
-        fuelPrice = calcPrice[pressure]['adjustment'][2] # 연료비조정액 단가
+        fuelPrice = calcPrice['adjustment'][2] # 연료비조정액 단가
         fuelWon = math.floor(energy * fuelPrice)
         _LOGGER.debug(f"  연료비조정액:{fuelWon}원 = 사용량:{energy}kWh * 연료비조정단가:{fuelPrice}원")
         self._ret['fuelWon'] = fuelWon
@@ -509,8 +488,8 @@ class kwh2won_api:
             seasonDays = self._ret[mm]['useDays'] # 사용일수
             if (seasonDays == 0) :
                 continue
-            priceYymm = self.price_find(self._ret[mm]['yymm'])
-            calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
+            priceYymm = self.price_find(PRICE_ELECBASIC, self._ret[mm]['yymm'])
+            calcPrice = merge(PRICE_BASE, PRICE_ELECBASIC[priceYymm])
             monthDays = self._ret['monthDays'] # 월일수
             energy = self._ret['energy'] # 사용전력
             pressure = self._ret['pressure'] # 계약전력
@@ -529,8 +508,8 @@ class kwh2won_api:
     # 200kWh 이하 감액(원미만 절사) = 저압 4,000  고압 2,500
     # 복지할인 해당시
     def calc_elecBasic200(self) :
-        priceYymm = self.price_find(self._ret['mm1']['yymm'])
-        calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
+        priceYymm = self.price_find(PRICE_ELECBASIC, self._ret['mm1']['yymm'])
+        calcPrice = merge(PRICE_BASE, PRICE_ELECBASIC[priceYymm])
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
         elecBasic200Limit = calcPrice[pressure]['elecBasic200Limit'] # 최대할인액
@@ -566,8 +545,8 @@ class kwh2won_api:
             if (seasonDays == 0) :
                 continue
             yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm = self.price_find(yymm)
-            calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
+            priceYymm = self.price_find(PRICE_DC, yymm)
+            calcPrice = merge(PRICE_BASE, PRICE_DC[priceYymm])
             if yymm[-2:] in ['06', '07', '08'] :
                 season = 'summer'
             else :
@@ -623,8 +602,8 @@ class kwh2won_api:
             if (seasonDays == 0) :
                 continue
             yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm = self.price_find(yymm)
-            calcPrice = merge(CALC_PARAMETER, MONTHLY_PRICE[priceYymm])
+            priceYymm = self.price_find(PRICE_DC, yymm)
+            calcPrice = merge(PRICE_BASE, PRICE_DC[priceYymm])
             if yymm[-2:] in ['06', '07', '08'] :
                 season = 'summer'
             else :
@@ -750,15 +729,15 @@ class kwh2won_api:
 # cfg = {
 #     'pressure' : 'low',
 #     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2022,8,10, 22,42,0), # 오늘
+#     'today' : datetime.datetime(2022,9,10, 22,42,0), # 오늘
 #     # 'today': datetime.datetime.now(),
-#     'bigfamDcCfg' : 0, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
+#     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
 #     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
 # }
 
 # K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(200)
-# K2W.calc_lengthDays()
-# forc = K2W.energy_forecast(17)
+# ret = K2W.kwh2won(400)
+# # K2W.calc_lengthDays()
+# # forc = K2W.energy_forecast(17)
 # # # import pprint
 # # # pprint.pprint(ret)
