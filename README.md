@@ -80,18 +80,32 @@ utility_meter:
 ```
 <br>
 
-- 전월 사용량 센서는 다음과 같이 만들수 있습니다. [`template`](https://www.home-assistant.io/integrations/template/) 
-
-
+- 전월 사용량 센서는 다음과 같이 만들수 있습니다. [`template`](https://www.home-assistant.io/integrations/template/) <br>
 ```
 template:
   - sensor:
       - name: "pzemac_energy_prev_monthly"
         unique_id: pzemac_energy_prev_monthly
-        unit_of_measurement: kWh
         state: "{{ state_attr('sensor.pzemac_energy_monthly','last_period') |round(1) }}"
+        unit_of_measurement: kWh
         device_class: energy
+        attributes:
+          state_class: total_increasing
+```
+<br>
+
+- Wh단위를 kWh로 변경하는 방법.<br>
+```
+template:
+  sensor:
+    - name: pmm_energy_monthly_kwh
+      unique_id: "pmm_energy_monthly_kwh"
+      state: "{{ (states('sensor.pmm_energy_monthly')|int /1000) |float(2) }}"
+      unit_of_measurement: kWh
+      device_class: energy
+      attributes:
         state_class: total_increasing
+        last_reset: "{{ state_attr('sensor.pmm_energy_monthly','last_reset') }}"
 ```
 
 
