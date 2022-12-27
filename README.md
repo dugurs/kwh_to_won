@@ -98,14 +98,14 @@ template:
 ```
 template:
   sensor:
-    - name: pmm_energy_monthly_kwh
-      unique_id: "pmm_energy_monthly_kwh"
-      state: "{{ states('sensor.pmm_energy_monthly')|float / 1000 }}"
+    - name: pmm_this_month_energy_kwh
+      unique_id: "pmm_this_month_energy_kwh"
+      state: "{{ states('sensor.pmm_xx_xx_xx_xx_xx_this_month_energy')|float / 1000 }}"
       unit_of_measurement: kWh
       device_class: energy
       attributes:
         state_class: total_increasing
-        last_reset: "{{ state_attr('sensor.pmm_energy_monthly','last_reset') }}"
+        last_reset: "{{ state_attr('sensor.pmm_xx_xx_xx_xx_xx_this_month_energy','last_reset') }}"
 ```
 
 
