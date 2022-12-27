@@ -100,7 +100,7 @@ template:
   sensor:
     - name: pmm_energy_monthly_kwh
       unique_id: "pmm_energy_monthly_kwh"
-      state: "{{ (states('sensor.pmm_energy_monthly')|int /1000) |float(2) }}"
+      state: "{{ states('sensor.pmm_energy_monthly')|float / 1000 }}"
       unit_of_measurement: kWh
       device_class: energy
       attributes:
