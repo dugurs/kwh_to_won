@@ -148,6 +148,7 @@ template:
 | v1.2.5  | 2022.08.30  | 보정계수 추가 |
 | v1.2.6  | 2022.09.07  | 필수사용량공제 폐지 적용, 예측사용량 분단위로 수정 [@beowulf](https://github.com/dugurs/kwh_to_won/commit/7169840069ebab595a3cc4e3f813df20790fe247)   |
 | v1.2.7  | 2022.10.01  | 10월 단가 인상분 반영  |
+| v1.2.8  | 2023.01.01  | 1월 단가 인상분 반영  |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
