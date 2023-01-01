@@ -4,14 +4,14 @@ from dateutil.relativedelta import relativedelta
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-# 로그의 출력 기준 설정
-_LOGGER.setLevel(logging.DEBUG)
-# log 출력 형식
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# log 출력
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-_LOGGER.addHandler(stream_handler)
+# # 로그의 출력 기준 설정
+# _LOGGER.setLevel(logging.DEBUG)
+# # log 출력 형식
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# # log 출력
+# stream_handler = logging.StreamHandler()
+# stream_handler.setFormatter(formatter)
+# _LOGGER.addHandler(stream_handler)
 
 import collections
 from copy import deepcopy
@@ -766,17 +766,17 @@ class kwh2won_api:
 
 
 
-cfg = {
-    'pressure' : 'low',
-    'checkDay' : 11, # 검침일
-    'today' : datetime.datetime(2023,1,10, 22,42,0), # 오늘
-    # 'today': datetime.datetime.now(),
-    'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-    'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
-}
+# cfg = {
+#     'pressure' : 'low',
+#     'checkDay' : 11, # 검침일
+#     'today' : datetime.datetime(2023,1,10, 22,42,0), # 오늘
+#     # 'today': datetime.datetime.now(),
+#     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
+#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+# }
 
-K2W = kwh2won_api(cfg)
-ret = K2W.kwh2won(314)
+# K2W = kwh2won_api(cfg)
+# ret = K2W.kwh2won(314)
 # # K2W.calc_lengthDays()
 # # forc = K2W.energy_forecast(17)
 # # # import pprint
