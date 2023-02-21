@@ -150,6 +150,7 @@ template:
 | v1.2.7  | 2022.10.01  | 10월 단가 인상분 반영  |
 | v1.2.8  | 2023.01.01  | 1월 단가 인상분 반영  |
 | v1.2.9  | 2023.01.07  | 비화성화된 엔터티 업데이트 오류 해결 [@n-andflash](https://github.com/dugurs/kwh_to_won/issues/4) |
+| v1.2.10  | 2023.02.21  | 월간센서 선택 방법 entity selector로 수정, 전월센서 state_class가 total_increasing 혹은 measurement 선택 가능 |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
