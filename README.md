@@ -48,8 +48,9 @@
 ### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `device_class: energy`, `state_class: total_increasing`, `unit_of_measurement: kWh`
-
+  - `device_class: energy`, `unit_of_measurement: kWh`, `state_class: total_increasing`
+- 전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
+  - `device_class: energy`, `unit_of_measurement: kWh`, `state_class: total_increasing 또는 measurement`
 ### 생성되는 센서
 - 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
   - `sensor.test_kwhto_won` 전기요금 센서
@@ -71,8 +72,8 @@
 
 # 매달 11일 0시 0분에 리셋 (검침 시작일 11일)
 utility_meter:
-  pzemac_energy_monthly:
-    source: sensor.pzemac_energy
+  xxxx_energy_monthly:
+    source: sensor.xxxx_energy
     cycle: monthly
     offset:
       days: 10
@@ -84,13 +85,13 @@ utility_meter:
 ```
 template:
   - sensor:
-      - name: "pzemac_energy_prev_monthly"
-        unique_id: pzemac_energy_prev_monthly
-        state: "{{ state_attr('sensor.pzemac_energy_monthly','last_period') |round(1) }}"
+      - name: "xxxx_energy_prev_monthly"
+        unique_id: xxxx_energy_prev_monthly
+        state: "{{ state_attr('sensor.xxxx_energy_monthly','last_period') |round(1) }}"
         unit_of_measurement: kWh
         device_class: energy
         attributes:
-          state_class: total_increasing
+          state_class: measurement
 ```
 <br>
 
