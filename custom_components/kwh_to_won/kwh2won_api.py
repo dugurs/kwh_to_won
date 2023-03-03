@@ -4,7 +4,7 @@ from dateutil.relativedelta import relativedelta
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-# # 로그의 출력 기준 설정
+# # 로그의 출력 기준 설정 (아래 모두 주석처리!!)
 # _LOGGER.setLevel(logging.DEBUG)
 # # log 출력 형식
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -34,7 +34,7 @@ PRICE_BASE = {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
         'kwhPrice' : [98.1, 192.7, 285.4, 704.5],   # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
         'kwhSection': {
-            'etc' : [200, 400, 10000],    # 구간(kWh - 기타)
+            'etc'    : [200, 400, 10000],    # 구간(kWh - 기타)
             'winter' : [200, 400, 1000, 10000],    # 구간(kWh - 동계)
             'summer' : [300, 450, 1000, 10000]   # 구간(kWh - 하계)(7~8월)
         },
@@ -45,7 +45,7 @@ PRICE_BASE = {
         'basicPrice' : [730, 1260, 6060, 6060],  # 기본요금(원/호)
         'kwhPrice' : [83.1, 152.1, 220.4, 569.6], # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가
         'kwhSection': {
-            'etc' : [200, 400, 10000],   # 구간(kWh - 기타)
+            'etc'    : [200, 400, 10000],   # 구간(kWh - 기타)
             'winter' : [200, 400, 1000, 10000],   # 구간(kWh - 동계)
             'summer' : [300, 450, 1000, 10000], # 구간(kWh - 하계)(7~8월)
         },
@@ -55,22 +55,24 @@ PRICE_BASE = {
     'adjustment' : [6.7, 7.3, 0], # 환경비용차감 + 기후환경요금 + 연료비조정액
     'dc': {
         'etc': {
-            'a1': 16000, # 5인이상 가구,출산가구,3자녀이상 가구
+            'a1': [16000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
             'a2': 0.3,   # 생명유지장치
             'b1': 16000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
             'b2': 0.3,   # 사회복지시설
             'b3': 16000, # 기초생활(생계.의료)
             'b4': 10000, # 기초생활(주거.교육)
             'b5': 8000,  # 차사위계층
+            'weak': [0,0], # 취약계 경감 단가
         },
         'summer': { # 6~8월
-            'a1': 16000,
+            'a1': [16000, 0.3],
             'a2': 0.3,
             'b1': 20000,
             'b2': 0.3,
             'b3': 20000,
             'b4': 12000,
             'b5': 10000,
+            'weak': [0,0],
         }
     }
 }
@@ -106,20 +108,20 @@ PRICE_ADJUSTMENT = {
     '2301': { 'adjustment' : [8.8, 9, 5] }, # RPS 7.7 + ETS 1.1, 석탄발전 감축비용 0.2, 연료비 조정액 +5원
 }
 
-# 필수사용량보장공제
+# 필수사용량보장공제 [최대할인액, 사용량]
 PRICE_ELECBASIC = {
     '2101': {
-        'low':  { 'elecBasicLimit' : 4000 },
-        'high': { 'elecBasicLimit' : 2500 }
+        'low':  { 'elecBasicLimit' : [4000, 200] },
+        'high': { 'elecBasicLimit' : [2500, 200] }
     },
     '2109': {
-        'low':  { 'elecBasicLimit' : 2000 },
-        'high': { 'elecBasicLimit' : 1500 }
+        'low':  { 'elecBasicLimit' : [2000, 200] },
+        'high': { 'elecBasicLimit' : [1500, 200] }
     },
     '2207': {
-        'low':  { 'elecBasicLimit' : 0 },
-        'high': { 'elecBasicLimit' : 0 }
-    },
+        'low':  { 'elecBasicLimit' : [0, 200] },
+        'high': { 'elecBasicLimit' : [0, 200] }
+    }
 }
 
 # 할인
@@ -128,7 +130,7 @@ PRICE_DC = {
     '2207': {
         'dc': {
             'etc': {
-                'a1': 22000, # 5인이상 가구,출산가구,3자녀이상 가구
+                'a1': [22000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
                 'a2': 0.3,   # 생명유지장치
                 'b1': 23600, # 독립유공자,국가유공자,5.18민주유공자,장애인 
                 'b2': 0.3,   # 사회복지시설
@@ -137,7 +139,7 @@ PRICE_DC = {
                 'b5': 12600,  # 차사위계층
             },
             'summer': { # 6월 ~ 8월
-                'a1': 22000,
+                'a1': [22000, 0.3],
                 'a2': 0.3,
                 'b1': 29600,
                 'b2': 0.3,
@@ -150,7 +152,7 @@ PRICE_DC = {
     '2210': {
         'dc': {
             'etc': {
-                'a1': 22000, # 5인이상 가구,출산가구,3자녀이상 가구
+                'a1': [22000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
                 'a2': 0.3,   # 생명유지장치
                 'b1': 22000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
                 'b2': 0.3,   # 사회복지시설
@@ -160,7 +162,30 @@ PRICE_DC = {
             }
         }
     },
-    '2301': {}
+    '2301': {
+        'dc': {
+            'etc': {
+                'a1': [16000, 0.3] , # 5인이상 가구,출산가구,3자녀이상 가구
+                'a2': 0.3,   # 생명유지장치
+                'b1': 16000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
+                'b2': 0.3,   # 사회복지시설
+                'b3': 16000, # 기초생활(생계.의료)
+                'b4': 10000, # 기초생활(주거.교육)
+                'b5': 8000,  # 차사위계층
+                'weak': [13.1, 313], # 취약계 경감 단가,최대사용량
+            },
+            'summer': { # 6월 ~ 8월
+                'a1': [16000, 0.3],
+                'a2': 0.3,
+                'b1': 20000,
+                'b2': 0.3,
+                'b3': 20000,
+                'b4': 12000,
+                'b5': 10000,
+                'weak': [13.1, 313],
+            }
+        }
+    }
 }
 
 
@@ -188,6 +213,7 @@ class kwh2won_api:
                 'climateWon': 0, # 기후환경요금
                 'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
+                'weakDc': 0,     # 취약계층 경감액
                 'welfareDc': 0,  # 복지할인
                 'bigfamDc': 0,   # 대가족할인
                 'elecBasicDc': 0, # 필수사용량보장공제
@@ -203,6 +229,7 @@ class kwh2won_api:
                 'climateWon': 0, # 기후환경요금
                 'useDays': 0,    # 사용일수
                 'kwhStep': 0,    # 누진단계
+                'weakDc': 0,     # 취약계층 경감액
                 'welfareDc': 0,  # 복지할인
                 'bigfamDc': 0,   # 대가족할인
                 'elecBasicDc': 0, # 필수사용량보장공제
@@ -216,6 +243,7 @@ class kwh2won_api:
             'elecBasicDc': 0, # 필수사용량보장공제
             'elecBasic200Dc': 0, # 200kWh이하 감액
             'bigfamDc': 0,   # 대가족 요금할인
+            'weakDc': 0,     # 취약계층 경감액
             'welfareDc': 0,  # 복지 요금할인
             'elecSumWon': 0,     # 전기요금계
             'vat': 0, # 부가가치세
@@ -335,6 +363,8 @@ class kwh2won_api:
         checkYear = self._ret['checkYear']
         checkMonth = self._ret['checkMonth']
         monthDays = self._ret['monthDays']
+        energy = self._ret['energy'] # 사용전력
+        supersection = PRICE_BASE['low']['kwhSection']['winter'][2]
         etc = 0
         winter = 0
         summer = 0
@@ -356,7 +386,7 @@ class kwh2won_api:
             if month in [7,8] :
                 summer += monthleng
                 season = 'summer'
-            elif month in [12,1,2] :
+            elif month in [12,1,2] and energy >= supersection :
                 winter += monthleng
                 season = 'winter'
             else :
@@ -372,7 +402,7 @@ class kwh2won_api:
             kwhYymm = self.price_find(PRICE_KWH, yymm)
             elecbacictYymm = self.price_find(PRICE_ELECBASIC, yymm)
             dcYymm = self.price_find(PRICE_DC, yymm)
-            _LOGGER.debug(f'{mm} : season{season} + adjust{adjustYymm} + kwh{kwhYymm} + elecbacict{elecbacictYymm} + dc{dcYymm}')
+            _LOGGER.debug(f'{mm} : season {season} + adjust {adjustYymm} + kwh {kwhYymm} + elecbacict {elecbacictYymm} + dc {dcYymm}')
             mmdiff.append(season + adjustYymm + kwhYymm + elecbacictYymm + dcYymm)
 
         # 시즌이 같고, 단가가 같으면 사용일을 하나로 합치기
@@ -390,16 +420,9 @@ class kwh2won_api:
     def set_price(self):
         for mm in ['mm1','mm2'] :
             yymm = self._ret[mm]['yymm'] # 사용연월
-
-            # 2023년 복지할인해당 사용자 313kWh 까지
-            # 1월 부터 12월 까지 한시적 인상전 단가 적용 (전력량요금, 기후환경요금)
-            if ((self._ret['bigfamDcCfg'] > 0 or self._ret['welfareDcCfg'] > 0) and int(yymm) >= 2301 and int(yymm) <= 2312 and self._ret['energy'] <= 313) :
-                yymm2 = '2212'
-            else :
-                yymm2 = yymm
-            priceYymm_ADJST = self.price_find(PRICE_ADJUSTMENT, yymm2)
+            priceYymm_ADJST = self.price_find(PRICE_ADJUSTMENT, yymm)
             calcPrice = merge(PRICE_BASE, PRICE_ADJUSTMENT[priceYymm_ADJST])
-            priceYymm_KWH = self.price_find(PRICE_KWH, yymm2)
+            priceYymm_KWH = self.price_find(PRICE_KWH, yymm)
             calcPrice = merge(calcPrice, PRICE_KWH[priceYymm_KWH])
             priceYymm = self.price_find(PRICE_ELECBASIC, yymm)
             calcPrice = merge(calcPrice, PRICE_ELECBASIC[priceYymm])
@@ -471,9 +494,10 @@ class kwh2won_api:
                     stepEnergyCalc = round(energy / monthDays * seasonDays) - stepEnergyCalcSum # 구간 사용량 계산
                 kwhStep += 1 # 누진 단계
                 stepEnergyCalcSum += stepEnergyCalc
-                kwhWon = round(stepEnergyCalc * (kwhPrice[kwhStep-1] + diffPrice), 2) # 구간 요금 계산
-                kwhWonSeason += kwhWon
-                kwhWonSum += kwhWon
+                kwhWon = round(stepEnergyCalc * kwhPrice[kwhStep-1], 2) # 구간 요금 계산
+                diffWon = round(stepEnergyCalc * diffPrice, 2) # 구간 요금 계산
+                kwhWonSeason += kwhWon + diffWon
+                kwhWonSum += kwhWon + diffWon
                 _LOGGER.debug(f"    {kwhStep}단계, 구간에너지 : {stepEnergy} (~{stepkwh}), 구간전력량요금 : {kwhWon}원 = ({stepEnergy}kWh * {seasonDays}d / {monthDays}d):{stepEnergyCalc}kWh * {kwhPrice[kwhStep-1]}원") # 구간 요금 계산
             basicWon = basicPrice[kwhStep-1] * seasonDays / monthDays
             basicWonSum += basicWon
@@ -486,14 +510,14 @@ class kwh2won_api:
             self._ret[mm]['kwhStep'] = kwhStep
             self._ret[mm]['diffWon'] = diffWon
             self._ret[mm]['climateWon'] = climateWon
-            _LOGGER.debug(f"    시즌요금{round(basicWon)+round(kwhWonSeason)-diffWon+climateWon} = 시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason)}원, 환경비용차감:-{diffWon}, 기후환경요금:{climateWon}")
+            _LOGGER.debug(f"    시즌요금{round(basicWon)+round(kwhWonSeason)-diffWon+climateWon} = 시즌기본요금:{round(basicWon)}원, 시즌전력량요금:{round(kwhWonSeason-diffWon)}원 + 환경비용차감:-{diffWon}, 기후환경요금:{climateWon}")
         basicWonSum = math.floor(basicWonSum) # 기본요금합
         kwhWon = math.floor(kwhWonSum - diffWonSum) # 전력량요금 (원 미만 절사) 
         self._ret['kwhWon'] = kwhWon # 전력량요금(원 미만 절사) 
         self._ret['basicWon'] = math.floor(basicWonSum) # 기본요금(원 미만 절사)
         self._ret['diffWon'] = math.floor(diffWonSum) # 환경비용차감(원 미만 절사)
         self._ret['climateWon'] = math.floor(climateWonSum) # 기후환경요금(원 미만 절사)
-        _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum)}원, 환경비용차감:{round(diffWonSum)}원")
+        _LOGGER.debug(f"  기본요금합:{basicWonSum}원, 전력량요금합:{math.floor(kwhWonSum-diffWonSum)}원 + 환경비용차감:{round(diffWonSum)}원")
         _LOGGER.debug(f"  전력량요금:{kwhWon}원 = 전력량요금합:{math.floor(kwhWonSum)} - 환경비용차감:{round(diffWonSum)}")
         _LOGGER.debug(f"  기후환경요금:{math.floor(climateWonSum)}원")
 
@@ -504,11 +528,6 @@ class kwh2won_api:
     # * 연료비조정액은 일수계산 안 함
     # 요금 산정기준은 검침일인데 6월1일부터6월30일 까지 사용한것을 7월1일 검침하는 것 
     def calc_fuelWon(self) :
-        # 검침 시작일의 한달 후를 구함.
-        d = datetime.date(self._ret['checkYear'], self._ret['checkMonth'], self._ret['checkDay'])
-        d = d + relativedelta(months=1)
-        yymm = d.strftime("%y%m")
-        
         energy = self._ret['energy'] # 사용전력
         calcPrice = self._ret['mm1']['price'] # 단가
         fuelPrice = calcPrice['adjustment'][2] # 연료비조정액 단가
@@ -532,9 +551,9 @@ class kwh2won_api:
             monthDays = self._ret['monthDays'] # 월일수
             energy = self._ret['energy'] # 사용전력
             pressure = self._ret['pressure'] # 계약전력
-            elecBasicLimit = calcPrice[pressure]['elecBasicLimit'] # 최대할인액
-            elecBasic = 200
-            if (elecBasicLimit > 0 and energy <= elecBasic) :
+            elecBasicLimit = calcPrice[pressure]['elecBasicLimit'][0] # 최대할인액
+            elecBasicKwh = calcPrice[pressure]['elecBasicLimit'][1] # 최대사용량
+            if (elecBasicLimit > 0 and energy <= elecBasicKwh) :
                 elecBasicDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['diffWon'] + self._ret['fuelWon'] - 1000)
                 if elecBasicDc > elecBasicLimit :
                     elecBasicDc = elecBasicLimit
@@ -560,6 +579,35 @@ class kwh2won_api:
             self._ret['elecBasic200Dc'] = elecBasic200Dc
             _LOGGER.debug(f"200kWh 이하 감액:{elecBasic200Dc} = {elecBasic200Limit} or 기본요금합:{self._ret['basicWon']}원 + 전력량요금합:{self._ret['kwhWon']}원 + 기후환경요금{self._ret['climateWon']} + 연료비조정액:{self._ret['fuelWon']}원")
 
+
+    # 취약계층 경감액(원미만 절사)
+    # 2023년 복지할인해당 사용자 313kWh 까지
+    # 1월 부터 12월 까지 한시적 인상전 단가 적용 (전력량요금, 기후환경요금)
+    # MIN( 사용량kWh, 313kWh ) x 13.1원 x -1
+    def calc_weakDc(self):
+        energy = self._ret['energy'] # 사용전력
+        monthDays = self._ret['monthDays'] # 월일수
+        if (self._ret['bigfamDcCfg'] > 0 or self._ret['welfareDcCfg'] > 0) :
+            _LOGGER.debug(f"취약계층 경감액 구하기 =====")
+            for mm in ['mm1','mm2'] :
+                seasonDays = self._ret[mm]['useDays'] # 사용일수
+                if (seasonDays == 0) :
+                    continue
+                yymm = self._ret[mm]['yymm'] # 사용연월
+                priceYymm = self.price_find(PRICE_DC, yymm)
+                calcPrice = self._ret[mm]['price']
+                if yymm[-2:] in ['06', '07', '08'] :
+                    season = 'summer'
+                else :
+                    season = 'etc'
+                dc = calcPrice['dc'][season] # 할인액
+                weak = dc['weak']
+                if (weak[0] > 0) : 
+                    weakDc = round(round(min([energy, weak[1]]) / monthDays * seasonDays) * weak[0] *10) /10
+                    _LOGGER.debug(f"  취약계경감액 {yymm} : 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm}, 사용량:{round(min(energy, weak[1]) / monthDays * seasonDays)}kWh, 경감액:{weakDc}원 = MIN({energy}kWh, {weak[1]}kWh) / {monthDays}일 * {seasonDays}일 * {weak[0]}원")
+                    self._ret[mm]['weakDc'] = weakDc
+            self._ret['weakDc'] = self._ret['mm1']['weakDc'] + self._ret['mm2']['weakDc']
+            _LOGGER.debug(f"  취약계경감액 = {self._ret['weakDc']}원")
 
 
     # 복지 할인은 6~8월 하계 적용
@@ -634,7 +682,6 @@ class kwh2won_api:
         bigfamDcCfg = self._ret['bigfamDcCfg']
         welfareDcCfg = self._ret['welfareDcCfg'] # 할인 종류
         elecBasic200Dc = self._ret['elecBasic200Dc']
-        welfareDc = self._ret['welfareDc']
         for mm in ['mm1','mm2'] :
             seasonDays = self._ret[mm]['useDays'] # 사용일수
             if (seasonDays == 0) :
@@ -652,14 +699,15 @@ class kwh2won_api:
             welfareDc_temp = 0
             if (welfareDcCfg >= 2) : # A2
                 welfareDc_temp = self._ret[mm]['welfareDc']
+            weakDc = self._ret[mm]['weakDc']
             fuelWon = math.floor(self._ret['fuelWon'] * self._ret[mm]['useDays'] / self._ret['monthDays'])
             kwhWonDcLimit = math.floor(self._ret[mm]['basicWon']) + math.floor(self._ret[mm]['kwhWon']) - math.floor(self._ret[mm]['diffWon']) + math.floor(self._ret[mm]['climateWon']) + fuelWon
-            bigfamDc2 = round(dc['a1'] / monthDays * seasonDays *100)/100
-            bigfamDc1 = round((kwhWonDcLimit - elecBasic200Dc - welfareDc_temp) * 0.3)
-            _LOGGER.debug(f"    할인액30%:{bigfamDc1} = (시즌전기요금:{kwhWonDcLimit} - 200kwh이하공제:{elecBasic200Dc} - 복지할인:{welfareDc_temp}) * 30% ")
+            bigfamDc2 = round(dc['a1'][0] / monthDays * seasonDays *100)/100
+            bigfamDc1 = round((kwhWonDcLimit - elecBasic200Dc - welfareDc_temp - weakDc) * dc['a1'][1])
+            _LOGGER.debug(f"    할인액{dc['a1'][1]*100}%:{bigfamDc1} = (시즌전기요금:{kwhWonDcLimit} - 200kwh이하공제:{elecBasic200Dc} - 복지할인:{welfareDc_temp} - 취약계층감액:{weakDc}) * {dc['a1'][1]*100}% ")
 
             if (bigfamDcCfg == 1) : # A1
-                _LOGGER.debug(f"    할인한도:{bigfamDc2} = 할인액:{dc['a1']} / 월일수:{monthDays} * 사용일수:{seasonDays} ")
+                _LOGGER.debug(f"    할인한도:{bigfamDc2} = 할인액:{dc['a1'][0]} / 월일수:{monthDays} * 사용일수:{seasonDays} ")
                 if (bigfamDc1 > bigfamDc2) :
                     bigfamDc1 = bigfamDc2
     
@@ -707,8 +755,9 @@ class kwh2won_api:
         elecBasic200Dc = self._ret['elecBasic200Dc'] # 200kWh이하 감액
         bigfamDc = self._ret['bigfamDc']   # 대가족 요금할인
         welfareDc = self._ret['welfareDc']  # 복지 요금할인
+        weakDc = self._ret['weakDc']   # 취약계층 경감액
         # 전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액)
-        elecSumWon = basicWon + kwhWon - elecBasicDc + climateWon + fuelWon - elecBasic200Dc - bigfamDc - welfareDc # 전기요금계
+        elecSumWon = basicWon + kwhWon - elecBasicDc + climateWon + fuelWon - elecBasic200Dc - bigfamDc - welfareDc - weakDc # 전기요금계
         vat = round(elecSumWon * 0.1) # 부가가치세
         baseFund = math.floor(elecSumWon * 0.037 /10)*10 # 전력산업기금
         total = math.floor((elecSumWon + vat + baseFund) /10)*10 # 청구금액
@@ -722,7 +771,7 @@ class kwh2won_api:
         self._ret['vat'] = vat # 부가가치세
         self._ret['baseFund'] = baseFund # 전력산업기반기금
         self._ret['total'] = total # 청구금액
-        _LOGGER.debug(f"전기요금계{elecSumWon} = 기본요금{basicWon} + 전력량요금{kwhWon} - 필수사용량 보장공제{elecBasicDc} + 기후환경요금{climateWon} + 연료비조정액{fuelWon} - 200kWh이하 감액{elecBasic200Dc} - 대가족할인{bigfamDc} - 복지할인{welfareDc}")
+        _LOGGER.debug(f"전기요금계{elecSumWon} = 기본요금{basicWon} + 전력량요금{kwhWon} - 필수사용량 보장공제{elecBasicDc} + 기후환경요금{climateWon} + 연료비조정액{fuelWon} - 200kWh이하 감액{elecBasic200Dc} - 대가족할인{bigfamDc} - 복지할인{welfareDc} - 취약계층감액{weakDc}")
         _LOGGER.debug(f"부가가치세(반올림):{vat}원 = 전기요금계{elecSumWon} * 0.1")
         _LOGGER.debug(f"전력산업기반기금(10원미만절사):{baseFund}원 = 전기요금계{elecSumWon} * 0.037")
         _LOGGER.debug(f"청구금액(10원미만절사):{total}원 = (전기요금계{elecSumWon} + 부가가치세{vat} + 전력산업기반기금{baseFund})")
@@ -751,6 +800,7 @@ class kwh2won_api:
         self.calc_fuelWon()       # 연료비조정액
 
         if (self._ret['bigfamDcCfg'] or self._ret['welfareDcCfg']) :
+            self.calc_weakDc() # 취약계층 경감액
             self.calc_elecBasic200() # 200kWh 이하 감액
             if self._ret['welfareDcCfg']:
                 self.calc_welfareDc() # 복지할인
@@ -769,14 +819,14 @@ class kwh2won_api:
 # cfg = {
 #     'pressure' : 'low',
 #     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2023,1,10, 22,42,0), # 오늘
+#     'today' : datetime.datetime(2023,3,3, 22,42,0), # 오늘
 #     # 'today': datetime.datetime.now(),
 #     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+#     'welfareDcCfg' : 1, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
 # }
 
 # K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(314)
+# ret = K2W.kwh2won(300)
 # # K2W.calc_lengthDays()
 # # forc = K2W.energy_forecast(17)
 # # # import pprint
