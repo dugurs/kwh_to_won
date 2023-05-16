@@ -152,7 +152,8 @@ template:
 | v1.2.8  | 2023.01.01 | 1월 단가 인상분 반영 |
 | v1.2.9  | 2023.01.07 | 비화성화된 엔터티 업데이트 오류 해결 [@n-andflash](https://github.com/dugurs/kwh_to_won/issues/4) |
 | v1.2.10 | 2023.02.21 | 월간센서 선택 방법 entity selector로 수정, 전월센서 state_class가 total_increasing 혹은 measurement 선택 가능 |
-| v1.3.0  | 2023.03.03 | 취약계층 경감액 계산 방식 적용 (복지할인 계산 틀리던 문제 수정) |
+| v1.3.1  | 2023.05.04 | HA 2023.5이상 오류 수정 |
+| v1.3.2  | 2023.05.16 | 단가인상 적용(8원) 5월16일부터 적용 이라 5월분은 오차발생(월단위 계산방식), 취약계층 할인 미반영(예정) |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
