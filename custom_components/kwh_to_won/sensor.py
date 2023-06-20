@@ -332,6 +332,7 @@ class ExtendSensor(SensorBase):
                 self._extra_state_attributes['대가족_할인'] = BIGFAM_DC_OPTION[ret['bigfamDcCfg']]
                 self._extra_state_attributes['복지_할인'] = WELFARE_DC_OPTION[ret['welfareDcCfg']]
                 seasonName = {'etc':'기타','summer':'하계', 'winter':'동계'}
+                season1 = None
                 if ret['mm1']['useDays'] > 0 :
                     season1 = seasonName[ret['mm1']['season']]
                     self._extra_state_attributes['누진단계_'+season1] = ret['mm1']['kwhStep']
