@@ -28,6 +28,18 @@ import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
+
+# 로그의 출력 기준 설정 (아래 모두 주석처리!!)
+_LOGGER.setLevel(logging.DEBUG)
+# log 출력 형식
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# log 출력
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+_LOGGER.addHandler(stream_handler)
+
+
+
 # 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
     'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
@@ -51,6 +63,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     pressure_config = config_entry.options.get("pressure_config", config_entry.data.get("pressure_config"))
     bigfam_dc_config = int(config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config")))
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
+    forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity"))
     prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
     calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
 
@@ -76,6 +89,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
                 pressure_config,
                 bigfam_dc_config,
                 welfare_dc_config,
+                forecast_energy_entity,
                 calibration_config,
                 sensor_type,
                 device.device_id + sensor_type
@@ -179,6 +193,7 @@ class ExtendSensor(SensorBase):
                         pressure_config,
                         bigfam_dc_config,
                         welfare_dc_config,
+                        forecast_energy_entity,
                         calibration_config,
                         sensor_type,
                         unique_id):
@@ -190,6 +205,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._state = None
         self._sensor_type = sensor_type
+        self._forecast_energy_entity = forecast_energy_entity
         self._calibration = calibration_config
         self._unique_id = unique_id
         self._device = device
@@ -305,12 +321,17 @@ class ExtendSensor(SensorBase):
                     self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
             elif self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
                 # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
-                forcest = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
-                self._state = forcest['forcest']
+                forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
+
+                if (self._forecast_energy_entity == None or self._forecast_energy_entity == "내장 예상 사용"):
+                    self._state = forecast['forecast']
+                else:
+                    self._state = self.hass.states.get(self._forecast_energy_entity).state
+
                 self._extra_state_attributes['사용량'] = self._energy
-                self._extra_state_attributes['검침시작일'] = str(forcest['checkMonth']) +'월 '+ str(forcest['checkDay']) + '일'
-                self._extra_state_attributes['사용일수'] = forcest['useDays']
-                self._extra_state_attributes['남은일수'] = forcest['monthDays'] - forcest['useDays']
+                self._extra_state_attributes['검침시작일'] = str(forecast['checkMonth']) +'월 '+ str(forecast['checkDay']) + '일'
+                self._extra_state_attributes['사용일수'] = forecast['useDays']
+                self._extra_state_attributes['남은일수'] = forecast['monthDays'] - forecast['useDays']
                 if self._energy < self._prev_energy :
                     self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
             else :
@@ -320,9 +341,9 @@ class ExtendSensor(SensorBase):
                     ret = self.KWH2WON.kwh2won(self._energy, self.KWH2WON.prev_checkday(datetime.datetime.now()))
                 else: # 예상 전기 사용 요금
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
-                    forcest = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
-                    ret = self.KWH2WON.kwh2won(forcest['forcest'], datetime.datetime.now())
-                    self._extra_state_attributes['예상사용량'] = forcest['forcest']
+                    forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
+                    ret = self.KWH2WON.kwh2won(forecast['forecast'], datetime.datetime.now())
+                    self._extra_state_attributes['예상사용량'] = forecast['forecast']
                 self._state = ret['total']
                 self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침시작일'] = str(ret['checkMonth']) +'월 '+ str(ret['checkDay']) + '일'

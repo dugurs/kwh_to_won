@@ -13,6 +13,7 @@
                     "pressure_config": "Please select the contract purpose",
                     "bigfam_dc_config": "Discount Select Applicable (Large Families)",
                     "welfare_dc_config": "Discount Select Applicable (Welfare)",
+                    "forecast_energy_entity": "Select a forecast electricity usage sensor",
                     "prev_energy_entity": "Select a previous month's electricity usage sensor",
                     "calibration_config": "calibration factor. If 0 it is not used. (Actual usage / Measured usage = Calibration factor)"
                 }
@@ -20,7 +21,9 @@
 
         },
         "error": {
-            "entity_not_found": "Monthly electricity usage sensor not found"
+            "entity_not_found": "Monthly electricity usage sensor not found",
+            "prev_entity_not_found": "previous month electricity usage sensor not found",
+            "forecast_entity_not_found": "forecast electricity usage sensor not found"
         },
         "abort": {
             "already_configured": "[%key:common::config_flow::abort::already_configured%]"
@@ -36,13 +39,16 @@
                     "pressure_config": "Please select the contract purpose",
                     "bigfam_dc_config": "Discount Select Applicable (Large Families)",
                     "welfare_dc_config": "Discount Select Applicable (Welfare)",
+                    "forecast_energy_entity": "Select a forecast electricity usage sensor",
                     "prev_energy_entity": "Select a previous month's electricity usage sensor",
                     "calibration_config": "calibration factor. If 0 it is not used. (Actual usage / Measured usage = Calibration factor)"
                 }
             }
         },
         "error": {
-            "entity_not_found": "Monthly electricity usage sensor not found"
+            "entity_not_found": "Monthly electricity usage sensor not found",
+            "prev_entity_not_found": "previous month electricity usage sensor not found",
+            "forecast_entity_not_found": "forecast electricity usage sensor not found"
         },
         "abort": {
             "already_configured": "[%key:common::config_flow::abort::already_configured%]"

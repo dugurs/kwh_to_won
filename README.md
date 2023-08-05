@@ -48,9 +48,11 @@
 ### 통합구성요소 추가
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `device_class: energy`, `unit_of_measurement: kWh`, `state_class: total_increasing`
+  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total_increasing`
 - 전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `device_class: energy`, `unit_of_measurement: kWh`, `state_class: total_increasing 또는 measurement`
+  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: measurement` ~~또는 total_increasing~~
+- 예상 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
+  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: measurement`
 ### 생성되는 센서
 - 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
   - `sensor.test_kwhto_won` 전기요금 센서
@@ -156,6 +158,7 @@ template:
 | v1.3.2  | 2023.05.16 | 단가인상 적용(8원) 5월16일부터 적용 이라 5월분은 오차발생(월단위 계산방식), 취약계층 할인 미반영(예정) |
 | v1.3.3  | 2023.06.02 | 취약계층 할인 반영 |
 | v1.3.4  | 2023.06.20 | bug fix |
+| v1.4.0  | 2023.08.05 | 예상 사용량 센서 선택 옵션 추가 |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>

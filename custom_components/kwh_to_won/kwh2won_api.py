@@ -314,10 +314,10 @@ class kwh2won_api:
         useDays = self._ret['useDays']
         monthDays = self._ret['monthDays']
 
-        forcest = round(energy / ((((useDays - 1) * 24) + today.hour) * 60 + today.minute + 1) * (monthDays * 24 * 60), 1)
-        _LOGGER.debug(f"########### 예상사용량:{forcest}, 월길이 {monthDays}, 사용일 {useDays}, 검침일 {checkDay}, 오늘 {today.day}")
+        forecast = round(energy / ((((useDays - 1) * 24) + today.hour) * 60 + today.minute + 1) * (monthDays * 24 * 60), 1)
+        _LOGGER.debug(f"########### 예상사용량:{forecast}, 월길이 {monthDays}, 사용일 {useDays}, 검침일 {checkDay}, 오늘 {today.day}")
         return {
-            'forcest': forcest,
+            'forecast': forecast,
             'monthDays': monthDays,
             'useDays': useDays,
             'checkMonth': checkMonth,
