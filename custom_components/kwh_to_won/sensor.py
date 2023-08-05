@@ -339,11 +339,19 @@ class ExtendSensor(SensorBase):
                     ret = self.KWH2WON.kwh2won(self._energy, datetime.datetime.now())
                 elif self._sensor_type == "kwhto_won_prev": # 전기 전월 사용 요금
                     ret = self.KWH2WON.kwh2won(self._energy, self.KWH2WON.prev_checkday(datetime.datetime.now()))
-                else: # 예상 전기 사용 요금
+                elif self._sensor_type == "kwhto_forecast_won": # 예상 전기 사용 요금
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                     forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
-                    ret = self.KWH2WON.kwh2won(forecast['forecast'], datetime.datetime.now())
-                    self._extra_state_attributes['예상사용량'] = forecast['forecast']
+
+                    if (self._forecast_energy_entity == None or self._forecast_energy_entity == "내장 예상 사용"):
+                        forecast_energy = forecast['forecast']
+                    else:
+                        forecast_energy = self.hass.states.get(self._forecast_energy_entity).state
+
+                    ret = self.KWH2WON.kwh2won(forecast_energy, datetime.datetime.now())
+                    self._extra_state_attributes['예상사용량'] = forecast_energy
+                
+                    
                 self._state = ret['total']
                 self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침시작일'] = str(ret['checkMonth']) +'월 '+ str(ret['checkDay']) + '일'
