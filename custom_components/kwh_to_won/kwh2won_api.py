@@ -608,7 +608,7 @@ class kwh2won_api:
             _LOGGER.debug(f"200kWh 이하 감액:{elecBasic200Dc} = {elecBasic200Limit} or 기본요금합:{self._ret['basicWon']}원 + 전력량요금합:{self._ret['kwhWon']}원 + 기후환경요금{self._ret['climateWon']} + 연료비조정액:{self._ret['fuelWon']}원")
 
 
-    # 취약계층 경감액(원미만 절사)
+    # 요금동결할인, 취약계층 경감액(원미만 절사)
     # 2023년 복지할인해당 사용자 313kWh 까지
     # 1월 부터 12월 까지 한시적 인상전 단가 적용 (전력량요금, 기후환경요금)
     # MIN( 사용량kWh, 313kWh ) x 13.1원 x -1
@@ -631,8 +631,8 @@ class kwh2won_api:
                 dc = calcPrice['dc'][season] # 할인액
                 weak = dc['weak']
                 if (weak[0] > 0) : 
-                    weakDc = round(round(min([energy, weak[1]]) / monthDays * seasonDays) * weak[0] *10) /10
-                    _LOGGER.debug(f"  취약계경감액 {yymm} : 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm}, 사용량:{round(min(energy, weak[1]) / monthDays * seasonDays)}kWh, 경감액:{weakDc}원 = MIN({energy}kWh, {weak[1]}kWh) / {monthDays}일 * {seasonDays}일 * {weak[0]}원")
+                    weakDc = math.floor(round(min([energy, weak[1]]) / monthDays * seasonDays) * weak[0])
+                    _LOGGER.debug(f"  취약계경감액 년월:{yymm}, : 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm}, 사용량:{round(min(energy, weak[1]) / monthDays * seasonDays)}kWh, 경감액:{weakDc}원 = MIN({energy}kWh, {weak[1]}kWh) / {monthDays}일 * {seasonDays}일 * {weak[0]}원")
                     self._ret[mm]['weakDc'] = weakDc
             self._ret['weakDc'] = self._ret['mm1']['weakDc'] + self._ret['mm2']['weakDc']
             _LOGGER.debug(f"  취약계경감액 = {self._ret['weakDc']}원")
@@ -846,15 +846,15 @@ class kwh2won_api:
 
 # cfg = {
 #     'pressure' : 'low',
-#     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2023,3,3, 22,42,0), # 오늘
+#     'checkDay' : 1, # 검침일
+#     'today' : datetime.datetime(2023,7,31, 22,42,0), # 오늘
 #     # 'today': datetime.datetime.now(),
 #     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 1, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
 # }
 
 # K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(300)
+# ret = K2W.kwh2won(478)
 # # K2W.calc_lengthDays()
 # # forc = K2W.energy_forecast(17)
 # # # import pprint
