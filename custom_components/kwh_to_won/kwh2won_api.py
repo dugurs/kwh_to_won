@@ -752,6 +752,8 @@ class kwh2won_api:
                     _LOGGER.debug(f"    할인한도:{bigfamDc2} = 할인액:{dc['a1'][0]} / 월일수:{monthDays} * 사용일수:{seasonDays} ")
                     if (bigfamDc1 > bigfamDc2) :
                         bigfamDc1 = bigfamDc2
+                if bigfamDc1 < 0:
+                    bigfamDc1 = 0
         
                 _LOGGER.debug(f"    할인금액:{bigfamDc1} ")
                 self._ret[mm]['bigfamDc'] = bigfamDc1
@@ -863,14 +865,14 @@ class kwh2won_api:
 # cfg = {
 #     'pressure' : 'low',
 #     'checkDay' : 1, # 검침일
-#     'today' : datetime.datetime(2023,7,31, 22,42,0), # 오늘
+#     'today' : datetime.datetime(2023,8,24, 22,42,0), # 오늘
 #     # 'today': datetime.datetime.now(),
 #     'bigfamDcCfg' : 1, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
+#     'welfareDcCfg' : 3, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
 # }
 
 # K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(478)
+# ret = K2W.kwh2won(199.9)
 # # K2W.calc_lengthDays()
 # # forc = K2W.energy_forecast(17)
 # # # import pprint
