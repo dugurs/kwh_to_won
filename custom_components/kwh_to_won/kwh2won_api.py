@@ -586,8 +586,10 @@ class kwh2won_api:
                 if elecBasicDc > elecBasicLimit :
                     elecBasicDc = elecBasicLimit
                 elecBasicDc = math.floor(elecBasicDc * seasonDays / monthDays * 100) / 100
-                _LOGGER.debug(f"필수사용량 보장공제:{elecBasicDc} = {elecBasicLimit} or (기본요금합:{self._ret['basicWon']}원, 전력량요금합:{self._ret['kwhWon']}원, 환경비용차감:{self._ret['diffWon']}원 - 1000) * {seasonDays} / {monthDays}") 
-                self._ret[mm]['elecBasicDc'] = elecBasicDc
+                _LOGGER.debug(f"필수사용량 보장공제:{elecBasicDc} = {elecBasicLimit} or (기본요금합:{self._ret['basicWon']}원, 전력량요금합:{self._ret['kwhWon']}원, 환경비용차감:{self._ret['diffWon']}원 - 1000) * {seasonDays} / {monthDays}")
+            else:
+                elecBasicDc = 0
+            self._ret[mm]['elecBasicDc'] = elecBasicDc
         self._ret['elecBasicDc'] = math.floor(self._ret['mm1']['elecBasicDc'] + self._ret['mm2']['elecBasicDc'])
 
 
@@ -606,6 +608,8 @@ class kwh2won_api:
                 elecBasic200Dc = elecBasic200Limit
             self._ret['elecBasic200Dc'] = elecBasic200Dc
             _LOGGER.debug(f"200kWh 이하 감액:{elecBasic200Dc} = {elecBasic200Limit} or 기본요금합:{self._ret['basicWon']}원 + 전력량요금합:{self._ret['kwhWon']}원 + 기후환경요금{self._ret['climateWon']} + 연료비조정액:{self._ret['fuelWon']}원")
+        else:
+            self._ret['elecBasic200Dc'] = 0
 
 
     # 요금동결할인, 취약계층 경감액(원미만 절사)
@@ -636,6 +640,10 @@ class kwh2won_api:
                     self._ret[mm]['weakDc'] = weakDc
             self._ret['weakDc'] = self._ret['mm1']['weakDc'] + self._ret['mm2']['weakDc']
             _LOGGER.debug(f"  취약계경감액 = {self._ret['weakDc']}원")
+        else:
+            self._ret['mm1']['weakDc'] = 0
+            self._ret['mm2']['weakDc'] = 0
+            self._ret['weakDc'] = 0
 
 
     # 복지 할인은 6~8월 하계 적용
@@ -650,48 +658,53 @@ class kwh2won_api:
     # B  : 전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액 － 200kWh이하감액 － 복지할인)
     # B2 :              전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액 － 200kWh이하감액 － 복지할인 － 필수사용량 보장공제)
     def calc_welfareDc(self) :
-        _LOGGER.debug(f"복지할인 구하기 =====")
-        monthDays = self._ret['monthDays'] # 월일수
-        welfareDcCfg = self._ret['welfareDcCfg'] # 할인 종류
-        for mm in ['mm1','mm2'] :
-            welfareDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['climateWon'] + self._ret['fuelWon'])
-            seasonDays = self._ret[mm]['useDays'] # 사용일수
-            if (seasonDays == 0) :
-                continue
-            yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm = self.price_find(PRICE_DC, yymm)
-            calcPrice = self._ret[mm]['price']
-            if yymm[-2:] in ['06', '07', '08'] :
-                season = 'summer'
-            else :
-                season = 'etc'
-            dc = calcPrice['dc'][season] # 할인액
-            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm}, 전기요금계:{welfareDc} ")
-            # pprint.pprint(dc)
-            if (welfareDcCfg == 1) : # B1
-                if (welfareDc > dc['b1']) :
-                    welfareDc = dc['b1']
-                _LOGGER.debug(f"    유공자,장애인할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b1']}")
-            elif (welfareDcCfg == 2) :
-                welfareDc = welfareDc * dc['b2']
-                _LOGGER.debug(f"    사회복지시설할인 : {welfareDc} = (전기요금계 - 필수사용량 보장공제 ) x {dc['b2']}, 한도 없음")
-            elif (welfareDcCfg == 3) :
-                if (welfareDc > dc['b3']) :
-                    welfareDc = dc['b3']
-                _LOGGER.debug(f"    기초생활(생계.의료)할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b3']}")
-            elif (welfareDcCfg == 4) :
-                if (welfareDc > dc['b4']) :
-                    welfareDc = dc['b4']
-                _LOGGER.debug(f"    기초생활(주거.교육)할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b4']}")
-            elif (welfareDcCfg == 5) :
-                _LOGGER.debug(f"    {welfareDc} , {dc['b5']}")
-                if (welfareDc > dc['b5']) :
-                    welfareDc = dc['b5']
-                _LOGGER.debug(f"    차사위계층할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b5']}")
-            self._ret[mm]['welfareDc'] = round( welfareDc / monthDays * seasonDays * 100 ) / 100
-            _LOGGER.debug(f"    일할계산 {self._ret[mm]['welfareDc']} = {welfareDc} / {monthDays} * {seasonDays}")
-        self._ret['welfareDc'] = math.floor( self._ret['mm1']['welfareDc'] + self._ret['mm2']['welfareDc'] )
-        _LOGGER.debug(f"  복지할인 = {self._ret['welfareDc']}")
+        if self._ret['welfareDcCfg'] > 0:
+            _LOGGER.debug(f"복지할인 구하기 =====")
+            monthDays = self._ret['monthDays'] # 월일수
+            welfareDcCfg = self._ret['welfareDcCfg'] # 할인 종류
+            for mm in ['mm1','mm2'] :
+                welfareDc = math.floor(self._ret['basicWon'] + self._ret['kwhWon'] + self._ret['climateWon'] + self._ret['fuelWon'])
+                seasonDays = self._ret[mm]['useDays'] # 사용일수
+                if (seasonDays == 0) :
+                    continue
+                yymm = self._ret[mm]['yymm'] # 사용연월
+                priceYymm = self.price_find(PRICE_DC, yymm)
+                calcPrice = self._ret[mm]['price']
+                if yymm[-2:] in ['06', '07', '08'] :
+                    season = 'summer'
+                else :
+                    season = 'etc'
+                dc = calcPrice['dc'][season] # 할인액
+                _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm}, 전기요금계:{welfareDc} ")
+                # pprint.pprint(dc)
+                if (welfareDcCfg == 1) : # B1
+                    if (welfareDc > dc['b1']) :
+                        welfareDc = dc['b1']
+                    _LOGGER.debug(f"    유공자,장애인할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b1']}")
+                elif (welfareDcCfg == 2) :
+                    welfareDc = welfareDc * dc['b2']
+                    _LOGGER.debug(f"    사회복지시설할인 : {welfareDc} = (전기요금계 - 필수사용량 보장공제 ) x {dc['b2']}, 한도 없음")
+                elif (welfareDcCfg == 3) :
+                    if (welfareDc > dc['b3']) :
+                        welfareDc = dc['b3']
+                    _LOGGER.debug(f"    기초생활(생계.의료)할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b3']}")
+                elif (welfareDcCfg == 4) :
+                    if (welfareDc > dc['b4']) :
+                        welfareDc = dc['b4']
+                    _LOGGER.debug(f"    기초생활(주거.교육)할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b4']}")
+                elif (welfareDcCfg == 5) :
+                    _LOGGER.debug(f"    {welfareDc} , {dc['b5']}")
+                    if (welfareDc > dc['b5']) :
+                        welfareDc = dc['b5']
+                    _LOGGER.debug(f"    차사위계층할인 : {welfareDc} = (전기요금계 - 200kWh이하감액 ) or {dc['b5']}")
+                self._ret[mm]['welfareDc'] = round( welfareDc / monthDays * seasonDays * 100 ) / 100
+                _LOGGER.debug(f"    일할계산 {self._ret[mm]['welfareDc']} = {welfareDc} / {monthDays} * {seasonDays}")
+            self._ret['welfareDc'] = math.floor( self._ret['mm1']['welfareDc'] + self._ret['mm2']['welfareDc'] )
+            _LOGGER.debug(f"  복지할인 = {self._ret['welfareDc']}")
+        else:
+            self._ret['mm1']['welfareDc'] = 0
+            self._ret['mm2']['welfareDc'] = 0
+            self._ret['welfareDc'] = 0
 
 
     # 복지 할인은 6~8월 하계 적용
@@ -705,44 +718,49 @@ class kwh2won_api:
     # A2 : 생명유지장치 (한도 없음)
     # 전기요금계((기본요금 ＋ 전력량요금 － 필수사용량 보장공제 ＋ 기후환경요금 ± 연료비조정액) － 200kWh이하감액) x 30% = 대가족 요금할인
     def calc_bigfamDc(self) :
-        _LOGGER.debug(f"대가족요금할인 구하기 =====")
-        monthDays = self._ret['monthDays'] # 월일수
-        bigfamDcCfg = self._ret['bigfamDcCfg']
-        welfareDcCfg = self._ret['welfareDcCfg'] # 할인 종류
-        elecBasic200Dc = self._ret['elecBasic200Dc']
-        for mm in ['mm1','mm2'] :
-            seasonDays = self._ret[mm]['useDays'] # 사용일수
-            if (seasonDays == 0) :
-                continue
-            yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm = self.price_find(PRICE_DC, yymm)
-            calcPrice = self._ret[mm]['price']
-            if yymm[-2:] in ['06', '07', '08'] :
-                season = 'summer'
-            else :
-                season = 'etc'
-            dc = calcPrice['dc'][season] # 최대할인액
-            _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm} ")
+        if self._ret['bigfamDcCfg'] > 0:
+            _LOGGER.debug(f"대가족요금할인 구하기 =====")
+            monthDays = self._ret['monthDays'] # 월일수
+            bigfamDcCfg = self._ret['bigfamDcCfg']
+            welfareDcCfg = self._ret['welfareDcCfg'] # 할인 종류
+            elecBasic200Dc = self._ret['elecBasic200Dc']
+            for mm in ['mm1','mm2'] :
+                seasonDays = self._ret[mm]['useDays'] # 사용일수
+                if (seasonDays == 0) :
+                    continue
+                yymm = self._ret[mm]['yymm'] # 사용연월
+                priceYymm = self.price_find(PRICE_DC, yymm)
+                calcPrice = self._ret[mm]['price']
+                if yymm[-2:] in ['06', '07', '08'] :
+                    season = 'summer'
+                else :
+                    season = 'etc'
+                dc = calcPrice['dc'][season] # 최대할인액
+                _LOGGER.debug(f"  사용월:{yymm}, 사용일:{seasonDays}/{monthDays}, 시즌:{season}, 단가월:{priceYymm} ")
 
-            welfareDc_temp = 0
-            if (welfareDcCfg >= 2) : # A2
-                welfareDc_temp = self._ret[mm]['welfareDc']
-            weakDc = self._ret[mm]['weakDc']
-            fuelWon = math.floor(self._ret['fuelWon'] * self._ret[mm]['useDays'] / self._ret['monthDays'])
-            kwhWonDcLimit = math.floor(self._ret[mm]['basicWon']) + math.floor(self._ret[mm]['kwhWon']) - math.floor(self._ret[mm]['diffWon']) + math.floor(self._ret[mm]['climateWon']) + fuelWon
-            bigfamDc2 = round(dc['a1'][0] / monthDays * seasonDays *100)/100
-            bigfamDc1 = round((kwhWonDcLimit - elecBasic200Dc - welfareDc_temp - weakDc) * dc['a1'][1])
-            _LOGGER.debug(f"    할인액{dc['a1'][1]*100}%:{bigfamDc1} = (시즌전기요금:{kwhWonDcLimit} - 200kwh이하공제:{elecBasic200Dc} - 복지할인:{welfareDc_temp} - 취약계층감액:{weakDc}) * {dc['a1'][1]*100}% ")
+                welfareDc_temp = 0
+                if (welfareDcCfg >= 2) : # A2
+                    welfareDc_temp = self._ret[mm]['welfareDc']
+                weakDc = self._ret[mm]['weakDc']
+                fuelWon = math.floor(self._ret['fuelWon'] * self._ret[mm]['useDays'] / self._ret['monthDays'])
+                kwhWonDcLimit = math.floor(self._ret[mm]['basicWon']) + math.floor(self._ret[mm]['kwhWon']) - math.floor(self._ret[mm]['diffWon']) + math.floor(self._ret[mm]['climateWon']) + fuelWon
+                bigfamDc2 = round(dc['a1'][0] / monthDays * seasonDays *100)/100
+                bigfamDc1 = round((kwhWonDcLimit - elecBasic200Dc - welfareDc_temp - weakDc) * dc['a1'][1])
+                _LOGGER.debug(f"    할인액{dc['a1'][1]*100}%:{bigfamDc1} = (시즌전기요금:{kwhWonDcLimit} - 200kwh이하공제:{elecBasic200Dc} - 복지할인:{welfareDc_temp} - 취약계층감액:{weakDc}) * {dc['a1'][1]*100}% ")
 
-            if (bigfamDcCfg == 1) : # A1
-                _LOGGER.debug(f"    할인한도:{bigfamDc2} = 할인액:{dc['a1'][0]} / 월일수:{monthDays} * 사용일수:{seasonDays} ")
-                if (bigfamDc1 > bigfamDc2) :
-                    bigfamDc1 = bigfamDc2
-    
-            _LOGGER.debug(f"    할인금액:{bigfamDc1} ")
-            self._ret[mm]['bigfamDc'] = bigfamDc1
-        self._ret['bigfamDc'] = math.floor( self._ret['mm1']['bigfamDc'] + self._ret['mm2']['bigfamDc'])
-        _LOGGER.debug(f"  대가족요금할인 = {self._ret['bigfamDc']}")
+                if (bigfamDcCfg == 1) : # A1
+                    _LOGGER.debug(f"    할인한도:{bigfamDc2} = 할인액:{dc['a1'][0]} / 월일수:{monthDays} * 사용일수:{seasonDays} ")
+                    if (bigfamDc1 > bigfamDc2) :
+                        bigfamDc1 = bigfamDc2
+        
+                _LOGGER.debug(f"    할인금액:{bigfamDc1} ")
+                self._ret[mm]['bigfamDc'] = bigfamDc1
+            self._ret['bigfamDc'] = math.floor( self._ret['mm1']['bigfamDc'] + self._ret['mm2']['bigfamDc'])
+            _LOGGER.debug(f"  대가족요금할인 = {self._ret['bigfamDc']}")
+        else:
+            self._ret['mm1']['bigfamDc'] = 0
+            self._ret['mm2']['bigfamDc'] = 0
+            self._ret['bigfamDc'] = 0
 
 
 
@@ -830,10 +848,8 @@ class kwh2won_api:
         if (self._ret['bigfamDcCfg'] or self._ret['welfareDcCfg']) :
             self.calc_weakDc() # 취약계층 경감액
             self.calc_elecBasic200() # 200kWh 이하 감액
-            if self._ret['welfareDcCfg']:
-                self.calc_welfareDc() # 복지할인
-            if self._ret['bigfamDcCfg']:
-                self.calc_bigfamDc()  # 대가족할인
+            self.calc_welfareDc() # 복지할인
+            self.calc_bigfamDc()  # 대가족할인
             self.calc_dc() # 중복할인 혹은 큰거
         else : 
             self.calc_elecBasic()    # 필수사용량 보장공제

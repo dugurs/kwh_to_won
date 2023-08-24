@@ -370,6 +370,25 @@ class ExtendSensor(SensorBase):
                     if season1 == season2 :
                         season2 = season2 + '2'
                     self._extra_state_attributes['누진단계_'+season2] = ret['mm2']['kwhStep']
+                    
+                self._extra_state_attributes['기본요금'] = ret['basicWon']
+                self._extra_state_attributes['전력량요금'] = ret['kwhWon']
+                # self._extra_state_attributes['환경비용차감'] = ret['diffWon'] # 전력량요금에 포함해 계산됨
+                self._extra_state_attributes['기후환경요금'] = ret['climateWon']
+                self._extra_state_attributes['연료비조정액'] = ret['fuelWon']
+                # self._extra_state_attributes['필수사용량보장공제'] = ret['elecBasicDc'] * -1 # 혜택 없어짐
+                if self._energy <= 200 :
+                    self._extra_state_attributes['200kWh이하감액'] = ret['elecBasic200Dc'] * -1
+                if ret['bigfamDcCfg'] > 0 :
+                    self._extra_state_attributes['대가족생명할인'] = ret['bigfamDc'] * -1
+                if ret['welfareDcCfg'] > 0 :
+                    self._extra_state_attributes['복지요금할인'] = ret['welfareDc'] * -1
+                if (ret['bigfamDcCfg'] > 0 or ret['welfareDcCfg'] > 0) :
+                    self._extra_state_attributes['요금동결할인'] = ret['weakDc'] * -1
+                self._extra_state_attributes['전기요금계'] = ret['elecSumWon']
+                self._extra_state_attributes['부가가치세'] = ret['vat']
+                self._extra_state_attributes['전력산업기반기금'] = ret['baseFund']
+
             self._prev_energy = self._energy
 
     async def async_update(self):
