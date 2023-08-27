@@ -806,11 +806,13 @@ class kwh2won_api:
         weakDc = self._ret['weakDc']   # 취약계층 경감액
         # 전기요금계(기본요금 ＋ 전력량요금 ＋ 기후환경요금 ± 연료비조정액)
         elecSumWon = basicWon + kwhWon - elecBasicDc + climateWon + fuelWon - elecBasic200Dc - bigfamDc - welfareDc - weakDc # 전기요금계
-        vat = round(elecSumWon * 0.1) # 부가가치세
-        baseFund = math.floor(elecSumWon * 0.037 /10)*10 # 전력산업기금
-        total = math.floor((elecSumWon + vat + baseFund) /10)*10 # 청구금액
-        
-        if (total < 0) :
+        if (elecSumWon > 0) :
+            vat = round(elecSumWon * 0.1) # 부가가치세
+            baseFund = math.floor(elecSumWon * 0.037 /10)*10 # 전력산업기금
+            total = math.floor((elecSumWon + vat + baseFund) /10)*10 # 청구금액
+        else:
+            vat = 0
+            baseFund = 0
             total = 0
         # elif (energy == 0) : # 사용량이 0 이면 50% 할인
         #     total = int(total/2)
