@@ -29,14 +29,14 @@ import datetime
 _LOGGER = logging.getLogger(__name__)
 
 
-# 로그의 출력 기준 설정 (아래 모두 주석처리!!)
-_LOGGER.setLevel(logging.DEBUG)
-# log 출력 형식
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# log 출력
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-_LOGGER.addHandler(stream_handler)
+# # 로그의 출력 기준 설정 (아래 모두 주석처리!!)
+# _LOGGER.setLevel(logging.DEBUG)
+# # log 출력 형식
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# # log 출력
+# stream_handler = logging.StreamHandler()
+# stream_handler.setFormatter(formatter)
+# _LOGGER.addHandler(stream_handler)
 
 
 
@@ -63,8 +63,8 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     pressure_config = config_entry.options.get("pressure_config", config_entry.data.get("pressure_config"))
     bigfam_dc_config = int(config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config")))
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
-    forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity"))
-    prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
+    forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity")).strip()
+    prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity")).strip()
     calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
 
     hass.data[DOMAIN]["listener"] = []
@@ -73,12 +73,12 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
 
     for sensor_type in SENSOR_TYPES:
         if sensor_type == "kwhto_won_prev":
-            if (prev_energy_entity == None or prev_energy_entity == "" or prev_energy_entity == "사용 안함"):
+            if (prev_energy_entity == ""):
                 continue
             else:
                 energy_entity = prev_energy_entity
         elif sensor_type == "kwhto_kwh":
-            if calibration_config == None or calibration_config == 0:
+            if calibration_config == 0:
                 continue
         new_devices.append(
             ExtendSensor(
@@ -205,7 +205,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._state = None
         self._sensor_type = sensor_type
-        self._forecast_energy_entity = forecast_energy_entity
+        self._forecast_energy_entity = forecast_energy_entity if (forecast_energy_entity !="") and _is_valid_state(self.hass.states.get(forecast_energy_entity)) else None
         self._calibration = calibration_config
         self._unique_id = unique_id
         self._device = device
@@ -310,7 +310,7 @@ class ExtendSensor(SensorBase):
 
     def update(self):
         """Update the state."""
-        if (self._energy != None) :
+        if (self._energy is not None) :
             if self._calibration > 0: # 보정계수가 적용
                 self._energy = round(self._energy_row * self._calibration , 1)
 
@@ -324,7 +324,7 @@ class ExtendSensor(SensorBase):
                 # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                 forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
 
-                if (self._forecast_energy_entity == None or self._forecast_energy_entity == "" or self._forecast_energy_entity == "내장 예상 사용"):
+                if (self._forecast_energy_entity is None):
                     self._state = forecast['forecast']
                 else:
                     self._state = self.hass.states.get(self._forecast_energy_entity).state
@@ -344,7 +344,7 @@ class ExtendSensor(SensorBase):
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                     forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
 
-                    if (self._forecast_energy_entity == None or self._forecast_energy_entity == "" or self._forecast_energy_entity == "내장 예상 사용"):
+                    if (self._forecast_energy_entity is None):
                         forecast_energy = forecast['forecast']
                     else:
                         forecast_energy = self.hass.states.get(self._forecast_energy_entity).state
@@ -352,7 +352,6 @@ class ExtendSensor(SensorBase):
                     ret = self.KWH2WON.kwh2won(forecast_energy, datetime.datetime.now())
                     self._extra_state_attributes['예상사용량'] = forecast_energy
                 
-                    
                 self._state = ret['total']
                 self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침시작일'] = str(ret['checkMonth']) +'월 '+ str(ret['checkDay']) + '일'
