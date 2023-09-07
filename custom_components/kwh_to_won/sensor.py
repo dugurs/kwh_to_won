@@ -29,14 +29,14 @@ import datetime
 _LOGGER = logging.getLogger(__name__)
 
 
-# # 로그의 출력 기준 설정 (아래 모두 주석처리!!)
-# _LOGGER.setLevel(logging.DEBUG)
-# # log 출력 형식
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# # log 출력
-# stream_handler = logging.StreamHandler()
-# stream_handler.setFormatter(formatter)
-# _LOGGER.addHandler(stream_handler)
+# 로그의 출력 기준 설정 (아래 모두 주석처리!!)
+_LOGGER.setLevel(logging.DEBUG)
+# log 출력 형식
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# log 출력
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+_LOGGER.addHandler(stream_handler)
 
 
 
@@ -63,9 +63,11 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     pressure_config = config_entry.options.get("pressure_config", config_entry.data.get("pressure_config"))
     bigfam_dc_config = int(config_entry.options.get("bigfam_dc_config", config_entry.data.get("bigfam_dc_config")))
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
-    forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity")).strip()
-    prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity")).strip()
+    forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity"))
+    prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
     calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
+    if (forecast_energy_entity == " " or forecast_energy_entity is None):
+        forecast_energy_entity = ""
 
     hass.data[DOMAIN]["listener"] = []
 
@@ -73,7 +75,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
 
     for sensor_type in SENSOR_TYPES:
         if sensor_type == "kwhto_won_prev":
-            if (prev_energy_entity == ""):
+            if (prev_energy_entity == "" or prev_energy_entity == " " or prev_energy_entity is None):
                 continue
             else:
                 energy_entity = prev_energy_entity
