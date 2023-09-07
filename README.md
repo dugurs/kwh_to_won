@@ -50,9 +50,9 @@
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
   - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total_increasing`
 - 전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: measurement` ~~또는 total_increasing~~
+  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`
 - 예상 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: measurement`
+  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`
 ### 생성되는 센서
 - 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
   - `sensor.test_kwhto_won` 전기요금 센서
@@ -93,7 +93,7 @@ template:
         unit_of_measurement: kWh
         device_class: energy
         attributes:
-          state_class: measurement
+          state_class: total
 ```
 <br>
 
@@ -163,6 +163,7 @@ template:
 | v1.4.2 | 2023.08.24 | 요금동결할인(취약계층 경감액) - 원미만 절사 반영 |
 | v1.4.3 | 2023.08.24 | 요금 속성 상세 추가, 할인액 초기화 오류 수정 |
 | v1.4.4 | 2023.08.29 | 전기요금계가 0이하면 부가세,전력기금 0원처리  |
+| v1.4.5 | 2023.08.29 | state_class 변경 measurement -> total  |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>

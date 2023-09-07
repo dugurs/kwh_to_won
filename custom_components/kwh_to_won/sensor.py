@@ -42,11 +42,11 @@ _LOGGER.addHandler(stream_handler)
 
 # 센서명, 클래스, 단위, 아이콘
 SENSOR_TYPES = {
-    'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
+    'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'total_increasing'],
     'kwhto_won': ['전기 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
-    'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'measurement'],
-    'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'measurement'],
-    'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'measurement'],
+    'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'total'],
+    'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total'],
+    'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total'],
 }
 
 
@@ -73,7 +73,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
 
     for sensor_type in SENSOR_TYPES:
         if sensor_type == "kwhto_won_prev":
-            if (prev_energy_entity == None or prev_energy_entity == "사용 안함"):
+            if (prev_energy_entity == None or prev_energy_entity == "" or prev_energy_entity == "사용 안함"):
                 continue
             else:
                 energy_entity = prev_energy_entity
@@ -323,7 +323,7 @@ class ExtendSensor(SensorBase):
                 # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                 forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
 
-                if (self._forecast_energy_entity == None or self._forecast_energy_entity == "내장 예상 사용"):
+                if (self._forecast_energy_entity == None or self._forecast_energy_entity == "" or self._forecast_energy_entity == "내장 예상 사용"):
                     self._state = forecast['forecast']
                 else:
                     self._state = self.hass.states.get(self._forecast_energy_entity).state
@@ -343,7 +343,7 @@ class ExtendSensor(SensorBase):
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                     forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
 
-                    if (self._forecast_energy_entity == None or self._forecast_energy_entity == "내장 예상 사용"):
+                    if (self._forecast_energy_entity == None or self._forecast_energy_entity == "" or self._forecast_energy_entity == "내장 예상 사용"):
                         forecast_energy = forecast['forecast']
                     else:
                         forecast_energy = self.hass.states.get(self._forecast_energy_entity).state

@@ -103,17 +103,13 @@ def _option_list(hass: HomeAssistant, device_name=None):
         errors['energy_entity'] = 'entity_not_found'
     kwh_sensor.sort()
     
-    kwh_sensor2 = _kwh_energy_sensors(hass, ['total_increasing','measurement'])
+    kwh_sensor2 = _kwh_energy_sensors(hass, ['total'])
     if len(kwh_sensor2) == 0:
         errors['prev_energy_entity'] = 'prev_entity_not_found'
     kwh_sensor2.sort()
-    kwh_sensor2.insert(0,"사용 안함")
-    
-    kwh_sensor3 = _kwh_energy_sensors(hass, ['measurement'])
-    if len(kwh_sensor3) == 0:
-        errors['forecast_energy_entity'] = 'forecast_entity_not_found'
-    kwh_sensor3.sort()
-    kwh_sensor3.insert(0,"내장 예상 사용")
+    kwh_sensor21 = kwh_sensor2[:]
+    kwh_sensor21.insert(0,"사용 안함")
+    kwh_sensor2.insert(0,"내장 예상 사용")
 
     options = [
         ("energy_entity", "required", "", selector({"entity": {"include_entities": kwh_sensor}})),
@@ -121,8 +117,8 @@ def _option_list(hass: HomeAssistant, device_name=None):
         ("pressure_config", "required", "low", vol.In(PRESSURE_OPTION)),
         ("bigfam_dc_config", "required", 0, vol.In(BIGFAM_DC_OPTION)),
         ("welfare_dc_config", "required", 0, vol.In(WELFARE_DC_OPTION)),
-        ("forecast_energy_entity", "required", "내장 예상 사용", vol.In(kwh_sensor3)),
-        ("prev_energy_entity", "required", "사용 안함", vol.In(kwh_sensor2)),
+        ("forecast_energy_entity", "required", "내장 예상 사용", vol.In(kwh_sensor2)),
+        ("prev_energy_entity", "required", "사용 안함", vol.In(kwh_sensor21)),
         ("calibration_config", "required", 1, vol.All(vol.Coerce(float), vol.Range(min=0, max=2)))
     ]
     return [options, errors]
