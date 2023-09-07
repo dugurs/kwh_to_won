@@ -44,8 +44,8 @@ _LOGGER.addHandler(stream_handler)
 SENSOR_TYPES = {
     'kwhto_kwh': ['전기 현재사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'total_increasing'],
     'kwhto_won': ['전기 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
-    'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', 'total'],
-    'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total'],
+    'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', ''],
+    'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', ''],
     'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total'],
 }
 
@@ -214,7 +214,8 @@ class ExtendSensor(SensorBase):
         self._device_class = SENSOR_TYPES[sensor_type][1]
         self._unit_of_measurement = SENSOR_TYPES[sensor_type][2]
         self._icon = SENSOR_TYPES[sensor_type][3]
-        self._extra_state_attributes['state_class'] = SENSOR_TYPES[sensor_type][4]
+        if SENSOR_TYPES[sensor_type][4] != '':
+            self._extra_state_attributes['state_class'] = SENSOR_TYPES[sensor_type][4]
         self._prev_energy = 0
         if self._sensor_type == "kwhto_forecast":
             self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
