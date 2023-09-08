@@ -53,8 +53,8 @@ async def async_update_options(hass, entry: ConfigEntry):
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     
-    for listener in hass.data[DOMAIN]["listener"]:
-        listener()
+    # for listener in hass.data[DOMAIN]["listener"]:
+    #     listener()
 
     unload_ok = all(
         await asyncio.gather(
