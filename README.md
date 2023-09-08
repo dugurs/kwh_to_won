@@ -39,7 +39,7 @@
 ### HACS
 - HACS > Integretions > 우측상단 메뉴 > Custom repositories 선택
 - `https://github.com/dugurs/kwh_to_won` 주소 입력, Category에 'integration' 선택 후, 저장
-- HACS > Integretions 메뉴 선택 후, `kwh_to_won` 혹은 `전기요금 계산 센서` 검색하여 설치
+- HACS > Integretions 메뉴 선택 후, `kwh_to_won` 검색하여 설치
 
 <br>
 
@@ -49,10 +49,10 @@
 - 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
   - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total_increasing`
-- 전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`
-- 예상 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`
+- ~~전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.~~
+  - ~~`unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`~~
+- ~~예상 전기 사용량 센서는 다음과 같은 속성이어야 합니다.~~
+  - ~~`unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`~~
 ### 생성되는 센서
 - 통합구성요소 추가시 이름을 `test`로 했다면 다음과 같은 3개의 센서가 생성됩니다.
   - `sensor.test_kwhto_won` 전기요금 센서
@@ -163,7 +163,7 @@ template:
 | v1.4.2 | 2023.08.24 | 요금동결할인(취약계층 경감액) - 원미만 절사 반영 |
 | v1.4.3 | 2023.08.24 | 요금 속성 상세 추가, 할인액 초기화 오류 수정 |
 | v1.4.4 | 2023.08.29 | 전기요금계가 0이하면 부가세,전력기금 0원처리  |
-| v1.4.5 | 2023.08.29 | state_class 변경 measurement -> total  |
+| v1.4.5 | 2023.08.29 | 전월,예상 센서 선택에서 입력으로 변경  |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
