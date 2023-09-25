@@ -164,6 +164,7 @@ template:
 | v1.4.3 | 2023.08.24 | 요금 속성 상세 추가, 할인액 초기화 오류 수정 |
 | v1.4.4 | 2023.08.29 | 전기요금계가 0이하면 부가세,전력기금 0원처리  |
 | v1.4.5 | 2023.08.29 | 전월,예상 센서 선택에서 입력으로 변경  |
+| v1.4.6 | 2023.08.29 | 예상사용량센서 입력시 상태 체크 제거 [@oukene](https://github.com/dugurs/kwh_to_won/issues/6)  |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
