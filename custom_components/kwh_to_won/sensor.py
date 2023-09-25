@@ -207,7 +207,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._state = None
         self._sensor_type = sensor_type
-        self._forecast_energy_entity = forecast_energy_entity if (forecast_energy_entity !="") and _is_valid_state(self.hass.states.get(forecast_energy_entity)) else None
+        self._forecast_energy_entity = forecast_energy_entity if (forecast_energy_entity !="") else None
         self._calibration = calibration_config
         self._unique_id = unique_id
         self._device = device
