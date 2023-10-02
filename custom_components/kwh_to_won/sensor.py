@@ -25,6 +25,7 @@ from homeassistant.helpers.event import async_track_state_change
 from .kwh2won_api import kwh2won_api as K2WAPI
 import math
 import datetime
+import re
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ SENSOR_TYPES = {
     'kwhto_forecast': ['전기 예상사용량', DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR, 'mdi:counter', ''],
     'kwhto_forecast_won': ['전기 예상요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', ''],
     'kwhto_won_prev': ['전기 전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total'],
+    'kwhto_won_prev2': ['전기 전전월 사용요금', DEVICE_CLASS_MONETARY, 'krw', 'mdi:cash-100', 'total'],
 }
 
 
@@ -65,6 +67,7 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     welfare_dc_config = int(config_entry.options.get("welfare_dc_config", config_entry.data.get("welfare_dc_config")))
     forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity"))
     prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
+    prev2_energy_entity = config_entry.options.get("prev2_energy_entity", config_entry.data.get("prev2_energy_entity"))
     calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
     if (forecast_energy_entity == " " or forecast_energy_entity is None):
         forecast_energy_entity = ""
@@ -75,10 +78,15 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
 
     for sensor_type in SENSOR_TYPES:
         if sensor_type == "kwhto_won_prev":
-            if (prev_energy_entity == "" or prev_energy_entity == " " or prev_energy_entity is None):
+            if (_is_valid_entity_id(prev_energy_entity) == False):
                 continue
             else:
                 energy_entity = prev_energy_entity
+        elif sensor_type == "kwhto_won_prev2":
+            if (_is_valid_entity_id(prev2_energy_entity) == False):
+                continue
+            else:
+                energy_entity = prev2_energy_entity
         elif sensor_type == "kwhto_kwh":
             if calibration_config == 0:
                 continue
@@ -207,7 +215,7 @@ class ExtendSensor(SensorBase):
         self._name = "{} {}".format(device.device_id, SENSOR_TYPES[sensor_type][0])
         self._state = None
         self._sensor_type = sensor_type
-        self._forecast_energy_entity = forecast_energy_entity if (forecast_energy_entity !="") else None
+        self._forecast_energy_entity = forecast_energy_entity if _is_valid_entity_id(forecast_energy_entity) else None
         self._calibration = calibration_config
         self._unique_id = unique_id
         self._device = device
@@ -342,6 +350,8 @@ class ExtendSensor(SensorBase):
                     ret = self.KWH2WON.kwh2won(self._energy, datetime.datetime.now())
                 elif self._sensor_type == "kwhto_won_prev": # 전기 전월 사용 요금
                     ret = self.KWH2WON.kwh2won(self._energy, self.KWH2WON.prev_checkday(datetime.datetime.now()))
+                elif self._sensor_type == "kwhto_won_prev2": # 전기 전월 사용 요금
+                    ret = self.KWH2WON.kwh2won(self._energy, self.KWH2WON.prev2_checkday(datetime.datetime.now()))
                 elif self._sensor_type == "kwhto_forecast_won": # 예상 전기 사용 요금
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
                     forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
@@ -400,3 +410,8 @@ class ExtendSensor(SensorBase):
 
 def _is_valid_state(state) -> bool:
     return state and state.state != STATE_UNKNOWN and state.state != STATE_UNAVAILABLE and not math.isnan(float(state.state))
+
+def _is_valid_entity_id(entity_id) -> bool:
+    if (entity_id is None or entity_id == ""):
+        return False
+    return bool(re.match(r"^[a-z][a-z_]+\.[a-zㄱ-힇_][a-zㄱ-힇0-9_]+$", entity_id, re.IGNORECASE|re.UNICODE))

@@ -15,6 +15,7 @@
                     "welfare_dc_config": "Discount Select Applicable (Welfare)",
                     "forecast_energy_entity": "Enter a forecast electricity usage sensor (optional)",
                     "prev_energy_entity": "Enter a previous month's electricity usage sensor (optional)",
+                    "prev2_energy_entity": "Enter a previous month's electricity usage sensor (optional)",
                     "calibration_config": "calibration factor. If 0 it is not used. (Actual usage / Measured usage = Calibration factor)"
                 }
             }
@@ -41,6 +42,7 @@
                     "welfare_dc_config": "Discount Select Applicable (Welfare)",
                     "forecast_energy_entity": "Enter a forecast electricity usage sensor (optional)",
                     "prev_energy_entity": "Enter a previous month's electricity usage sensor (optional)",
+                    "prev2_energy_entity": "Enter a two months ago electricity usage sensor (optional)",
                     "calibration_config": "calibration factor. If 0 it is not used. (Actual usage / Measured usage = Calibration factor)"
                 }
             }

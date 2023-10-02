@@ -341,7 +341,10 @@ class kwh2won_api:
         self.calc_lengthDays()
         d = datetime.date(self._ret['checkYear'], self._ret['checkMonth'], self._ret['checkDay'])
         return d - datetime.timedelta(days=1)
-
+    
+    # 전전달 검침말일 구하기
+    def prev2_checkday(self, today):
+        return self.prev_checkday(today) - relativedelta(months=1)
 
 
     # 월 사용일 구하기

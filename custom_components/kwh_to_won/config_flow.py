@@ -110,6 +110,7 @@ def _option_list(hass: HomeAssistant, device_name=None):
         ("welfare_dc_config", "required", 0, vol.In(WELFARE_DC_OPTION)),
         ("forecast_energy_entity", "optional", "", str),
         ("prev_energy_entity", "optional", "", str),
+        ("prev2_energy_entity", "optional", "", str),
         ("calibration_config", "required", 1, vol.All(vol.Coerce(float), vol.Range(min=0, max=2)))
     ]
     return [options, errors]

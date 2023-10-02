@@ -58,8 +58,9 @@
   - `sensor.test_kwhto_won` 전기요금 센서
   - `sensor.test_kwhto_forecast` 예상 사용량 센서
   - `sensor.test_kwhto_forecast_won` 예상 전기요금 센서
-- 전월 사용량 센서를 선택 했다면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
+- 전월 사용량, 전전월 사용량 센서를 입력 했다면 다름과 같은 센서가 추가로 생성 됩니다.
   - `sensor.test_kwhto_won_prev` 전월 전기요금 센서
+  - `sensor.test_kwhto_won_prev2` 전전월 전기요금 센서
 - 보정계수를 0보다 크게 설정하면 다름과 같은 1개의 센서가 추가로 생성 됩니다.
   - `sensor.test_kwhto_kwh` 전기사용량 센서
   - 보정계수 = 실제(검침)사용량 / 측정(센서)사용량
@@ -94,6 +95,24 @@ template:
         device_class: energy
         attributes:
           state_class: total
+```
+<br>
+
+- 전전월 사용량 센서는 전월 사용량 센서를 이용해 다름과 같이 만들수 있습니다. 
+```
+template:
+  - sensor:
+    - trigger:
+        - platform: state
+          entity_id: sensor.xxxx_energy_prev_monthly
+      sensor:
+        - name: xxxx_energy_prev2_monthly
+          unique_id: "xxxx_energy_prev2_monthly"
+          unit_of_measurement: kWh
+          state: "{{ trigger.from_state.state }}"
+          device_class: energy
+          attributes:
+            state_class: total
 ```
 <br>
 
@@ -165,6 +184,7 @@ template:
 | v1.4.4 | 2023.08.29 | 전기요금계가 0이하면 부가세,전력기금 0원처리  |
 | v1.4.5 | 2023.08.29 | 전월,예상 센서 선택에서 입력으로 변경  |
 | v1.4.6 | 2023.09.25 | 예상사용량센서 입력시 상태 체크 제거 [@oukene](https://github.com/dugurs/kwh_to_won/issues/6)  |
+| v1.4.7 | 2023.10.02 | 전전월 사용량 선택 입력 추가 |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
