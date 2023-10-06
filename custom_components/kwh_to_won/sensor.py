@@ -231,6 +231,10 @@ class ExtendSensor(SensorBase):
             self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
 
         self._energy_entity = energy_entity # energy 엔터티
+        # if self._sensor_type == "kwhto_forecast" or self._sensor_type == "kwhto_forecast_won":
+        #     if self._forecast_energy_entity is not None:
+        #         self._energy_entity = self._forecast_energy_entity # 예상 사용량 센서
+
         self._energy = None
         self._energy_row = None
 
@@ -247,7 +251,7 @@ class ExtendSensor(SensorBase):
         self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
         self._energy_row = self._energy
 
-        self.hass.states.get(self._energy_entity)
+        # self.hass.states.get(self._energy_entity)
         self.update()
 
     def setStateListener(self, hass, entity, listener):
@@ -280,6 +284,8 @@ class ExtendSensor(SensorBase):
     @property
     def state(self):
         """Return the state of the sensor."""
+        if self._state == "unknown":
+            return STATE_UNKNOWN
         return self._state
 
     @property
@@ -320,6 +326,7 @@ class ExtendSensor(SensorBase):
 
     def update(self):
         """Update the state."""
+        _LOGGER.debug(f"#  self._sensor_type {self._sensor_type}, self._energy:{self._energy}")
         if (self._energy is not None) :
             if self._calibration > 0: # 보정계수가 적용
                 self._energy = round(self._energy_row * self._calibration , 1)
@@ -332,12 +339,18 @@ class ExtendSensor(SensorBase):
                     self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
             elif self._sensor_type == "kwhto_forecast": # 예상 전기 사용량
                 # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
-                forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
-
+                _LOGGER.debug(f"###  self._forecast_energy_entity {self._forecast_energy_entity}")
                 if (self._forecast_energy_entity is None):
+                    forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
                     self._state = forecast['forecast']
                 else:
-                    self._state = self.hass.states.get(self._forecast_energy_entity).state
+                    _LOGGER.debug(f"####  self._forecast_energy_entity {self._forecast_energy_entity}")
+                    forecast_energy_entity_state = self.hass.states.get(self._forecast_energy_entity).state # 예상사용량센서가 UNKNOWN 상태이면
+                    _LOGGER.debug(f"####  forecast_energy_entity_state {forecast_energy_entity_state}")
+                    if forecast_energy_entity_state == "unknown":
+                        return 0
+                    forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
+                    self._state = forecast_energy_entity_state
 
                 self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침시작일'] = str(forecast['checkMonth']) +'월 '+ str(forecast['checkDay']) + '일'
@@ -354,12 +367,15 @@ class ExtendSensor(SensorBase):
                     ret = self.KWH2WON.kwh2won(self._energy, self.KWH2WON.prev2_checkday(datetime.datetime.now()))
                 elif self._sensor_type == "kwhto_forecast_won": # 예상 전기 사용 요금
                     # self.KWH2WON.calc_lengthDays() # 검침일, 월길이 재계산
-                    forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
 
                     if (self._forecast_energy_entity is None):
+                        forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
                         forecast_energy = forecast['forecast']
                     else:
-                        forecast_energy = self.hass.states.get(self._forecast_energy_entity).state
+                        forecast_energy_entity_state = self.hass.states.get(self._forecast_energy_entity).state # 예상사용량센서가 UNKNOWN 상태이면
+                        if forecast_energy_entity_state == "unknown":
+                            return 0
+                        forecast_energy = forecast_energy_entity_state
 
                     ret = self.KWH2WON.kwh2won(forecast_energy, datetime.datetime.now())
                     self._extra_state_attributes['예상사용량'] = forecast_energy
@@ -409,7 +425,7 @@ class ExtendSensor(SensorBase):
 
 
 def _is_valid_state(state) -> bool:
-    return state and state.state != STATE_UNKNOWN and state.state != STATE_UNAVAILABLE and not math.isnan(float(state.state))
+    return state and state is not None and state.state != STATE_UNKNOWN and state.state != STATE_UNAVAILABLE and not math.isnan(float(state.state))
 
 def _is_valid_entity_id(entity_id) -> bool:
     if (entity_id is None or entity_id == ""):
