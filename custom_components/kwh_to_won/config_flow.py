@@ -2,10 +2,11 @@
 from __future__ import annotations
 from tokenize import Number
 from urllib.parse import quote_plus, unquote
-from homeassistant.const import CONF_NAME, CONF_DEVICE_CLASS, DEVICE_CLASS_ENERGY, CONF_UNIT_OF_MEASUREMENT, ENERGY_KILO_WATT_HOUR
+from homeassistant.const import CONF_DEVICE_CLASS, CONF_UNIT_OF_MEASUREMENT, UnitOfEnergy
 import voluptuous as vol
 from homeassistant.core import callback
 from homeassistant.helpers.selector import selector
+from homeassistant.components.sensor import ENTITY_ID_FORMAT, SensorDeviceClass
 
 from homeassistant import config_entries
 
@@ -127,5 +128,5 @@ def _attr_filter(hass: HomeAssistant, sensor: str, stateClass):
     state = hass.states.get(sensor)
     if '_kwhto_' in sensor:
         return False
-    return state.attributes.get(CONF_UNIT_OF_MEASUREMENT) == ENERGY_KILO_WATT_HOUR and state.attributes.get(CONF_DEVICE_CLASS) == DEVICE_CLASS_ENERGY and state.attributes.get('state_class') in stateClass
+    return state.attributes.get(CONF_UNIT_OF_MEASUREMENT) == UnitOfEnergy.KILO_WATT_HOUR and state.attributes.get(CONF_DEVICE_CLASS) == SensorDeviceClass.ENERGY and state.attributes.get('state_class') in stateClass
 
