@@ -186,6 +186,7 @@ template:
 | v1.4.6 | 2023.09.25 | 예상사용량센서 입력시 상태 체크 제거 [@oukene](https://github.com/dugurs/kwh_to_won/issues/6)  |
 | v1.4.7 | 2023.10.02 | 전전월 사용량 선택 입력 추가 |
 | v1.4.8 | 2024.01.05 | HA Core 2025.01 대응  |
+| v1.4.8-1 | 2024.03.05 | HA Core 2025.01 대응  |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
