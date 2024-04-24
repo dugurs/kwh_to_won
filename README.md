@@ -106,7 +106,7 @@ template:
           entity_id: sensor.xxxx_energy_prev_monthly
       condition:
         - condition: template
-          value_template: "{{ trigger.from_state.state|float(0) > 0 }}"
+          value_template: "{{ trigger.to_state.state|float(0) > 0 and trigger.from_state.state|float(0) > 0 }}"
       sensor:
         - name: xxxx_energy_prev2_monthly
           unique_id: "xxxx_energy_prev2_monthly"
@@ -116,7 +116,7 @@ template:
           attributes:
             state_class: total
 ```
-혹은
+또는
 ```
 input_number:
   xxxx_energy_prev2_monthly:
@@ -138,7 +138,7 @@ automation:
       - sensor.xxxx_energy_prev_monthly
     condition:
     - condition: template
-      value_template: '{{ trigger.from_state.state|float(0) > 0 }}'
+      value_template: '{{ trigger.to_state.state|float(0) > 0 and trigger.from_state.state|float(0) > 0 }}'
     action:
     - service: input_number.set_value
       data:
