@@ -104,6 +104,9 @@ template:
     - trigger:
         - platform: state
           entity_id: sensor.xxxx_energy_prev_monthly
+      condition:
+        - condition: template
+          value_template: "{{ trigger.from_state.state > 0 }}"
       sensor:
         - name: xxxx_energy_prev2_monthly
           unique_id: "xxxx_energy_prev2_monthly"
@@ -112,6 +115,37 @@ template:
           device_class: energy
           attributes:
             state_class: total
+```
+혹은
+```
+input_number:
+  xxxx_energy_prev2_monthly:
+    name: "전기 전전월 사용량"
+    unit_of_measurement: "kWh"
+    icon: mdi:conuter
+    min: 0
+    max: 9999
+    step: 0.01
+    mode: box
+
+automation:
+  - id: '1713958xxxxxx'
+    alias: xxxx_energy_prev2_monthly
+    description: '전기 전전월 사용량'
+    trigger:
+    - platform: state
+      entity_id:
+      - sensor.xxxx_energy_prev_monthly
+    condition:
+    - condition: template
+      value_template: '{{ trigger.from_state.state > 0 }}'
+    action:
+    - service: input_number.set_value
+      data:
+        value: '{{ trigger.from_state.state }}'
+      target:
+        entity_id: input_number.xxxx_energy_prev2_monthly
+    mode: single
 ```
 <br>
 
