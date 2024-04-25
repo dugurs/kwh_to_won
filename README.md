@@ -104,9 +104,6 @@ template:
     - trigger:
         - platform: state
           entity_id: sensor.xxxx_energy_prev_monthly
-      condition:
-        - condition: template
-          value_template: "{{ trigger.to_state.state|float(0) > 0 and trigger.from_state.state|float(0) > 0 }}"
       sensor:
         - name: xxxx_energy_prev2_monthly
           unique_id: "xxxx_energy_prev2_monthly"
