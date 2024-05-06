@@ -80,7 +80,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             data_schema[key] = validation
         return self.async_show_form(
-            step_id="init",
+            step_id="user",
             data_schema=vol.Schema(data_schema),
             errors=errors
         )
