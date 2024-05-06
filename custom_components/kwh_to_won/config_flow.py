@@ -60,6 +60,30 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a option flow."""
         return OptionsFlowHandler(config_entry)
 
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        """Add reconfigure step to allow to reconfigure a config entry."""
+        errors = {}
+
+        if user_input is not None:
+            return self.async_create_entry(title=user_input['device_name'], data=user_input)
+        
+        option_list, errors = _option_list(self.hass)
+        data_schema = {vol.Required('device_name',self.data['device_name']): str}
+        for name, required, default, validation in option_list:
+            if required == "required":
+                key = (
+                    vol.Required(name, default)
+                )
+            else:
+                key = (
+                    vol.Optional(name, default)
+                )
+            data_schema[key] = validation
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(data_schema),
+            errors=errors
+        )
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle a option flow for Damda Pad."""
