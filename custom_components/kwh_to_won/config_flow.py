@@ -68,7 +68,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=user_input['device_name'], data=user_input)
         
         option_list, errors = _option_list(self.hass)
-        data_schema = {vol.Required('device_name',self.data['device_name']): str}
+        data_schema = {vol.Required('device_name'): str}
         for name, required, default, validation in option_list:
             if required == "required":
                 key = (
@@ -80,7 +80,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             data_schema[key] = validation
         return self.async_show_form(
-            step_id="reconfigure",
+            step_id="init",
             data_schema=vol.Schema(data_schema),
             errors=errors
         )
