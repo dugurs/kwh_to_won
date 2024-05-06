@@ -217,7 +217,7 @@ template:
 | v1.4.7 | 2023.10.02 | 전전월 사용량 선택 입력 추가 |
 | v1.4.8 | 2024.01.05 | HA Core 2025.01 대응  |
 | v1.4.9 | 2024.03.05 | HA Core 2025.01 대응  |
-| v1.4.10 | 2024.05.06 | HA Core 2025.04 대응  |
+| v1.4.10 | 2024.05.06 | error fix |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
