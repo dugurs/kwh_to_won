@@ -14,7 +14,8 @@ import asyncio
 
 from homeassistant import util
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
-from homeassistant.helpers.event import async_track_state_change
+from homeassistant.core import Event, EventStateChangedData, callback
+from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import DOMAIN, VERSION, MANUFACTURER, MODEL, PRESSURE_OPTION, BIGFAM_DC_OPTION, WELFARE_DC_OPTION
 from .kwh2won_api import kwh2won_api as K2WAPI
@@ -242,7 +243,6 @@ class ExtendSensor(SensorBase):
         }
         self.KWH2WON = K2WAPI(cfg)
 
-        # async_track_state_change(self.hass, self._energy_entity, self.energy_state_listener)
         self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
         self._energy_row = self._energy
 
@@ -250,20 +250,35 @@ class ExtendSensor(SensorBase):
         self.update()
 
     def setStateListener(self, hass, entity, listener):
-        hass.data[DOMAIN]["listener"].append(async_track_state_change(
+        hass.data[DOMAIN]["listener"].append(async_track_state_change_event(
                 self.hass, entity, listener))
             
         entity_state = self.hass.states.get(entity)
         if _is_valid_state(entity_state):
             return float(entity_state.state)
 
-    def energy_state_listener(self, entity, old_state, new_state):
+    # def energy_state_listener(self, entity, old_state, new_state):
+    #     """Handle temperature device state changes."""
+    #     if _is_valid_state(new_state):
+    #         self._energy = util.convert(new_state.state, float)
+    #         self._energy_row = self._energy
+    #     if self.enabled:
+    #         self.async_schedule_update_ha_state(True)
+    @callback
+    def energy_state_listener(self, event: Event[EventStateChangedData]) -> None:
         """Handle temperature device state changes."""
+        entity_id = event.data["entity_id"]
+        old_state = event.data["old_state"]
+        new_state = event.data["new_state"]
         if _is_valid_state(new_state):
             self._energy = util.convert(new_state.state, float)
             self._energy_row = self._energy
         if self.enabled:
-            self.async_schedule_update_ha_state(True)
+            self.hass.async_create_task(
+                self.async_update_ha_state(True),
+                # f"Entity schedule update ha state {self.entity_id}",
+                # eager_start=True,
+            )
 
 
     def unique_id(self):
