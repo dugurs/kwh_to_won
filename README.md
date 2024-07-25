@@ -36,16 +36,18 @@
   `<config directory>/custom_components/kwh_to_won/`<br>
 - Home-Assistant 를 재시작합니다<br>
 ### HACS
-- HACS > Integretions > 우측상단 메뉴 > Custom repositories 선택
-- `https://github.com/dugurs/kwh_to_won` 주소 입력, Category에 'integration' 선택 후, 저장
-- HACS > Integretions 메뉴 선택 후, `kwh_to_won` 검색하여 설치
+- [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=kwh_to_won&owner=dugurs&category=integration)
+  - HACS > Integretions > 우측상단 메뉴 > Custom repositories 선택
+    - `https://github.com/dugurs/kwh_to_won` 주소 입력, Category에 'integration' 선택 후, 저장
+  - HACS > Integretions 메뉴 선택 후, `kwh_to_won` 검색하여 설치
 
 <br>
 
 ## 사용
 
 ### 통합구성요소 추가
-- 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
+- [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=kwh_to_won)
+  - 설정 > 기기및서비스 > 통합구성요소 추가하기 > `kwh_to_won` 검색하여 추가
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
   - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total_increasing`
 - ~~전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.~~
