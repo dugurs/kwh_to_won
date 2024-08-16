@@ -1,9 +1,12 @@
 """Config flow for Damda Weather integration."""
 from __future__ import annotations
+
+from typing import AbstractSet
 from tokenize import Number
 from urllib.parse import quote_plus, unquote
-from homeassistant.const import CONF_DEVICE_CLASS, CONF_UNIT_OF_MEASUREMENT, UnitOfEnergy
+
 import voluptuous as vol
+from homeassistant.const import CONF_DEVICE_CLASS, CONF_UNIT_OF_MEASUREMENT, UnitOfEnergy
 from homeassistant.core import callback
 from homeassistant.helpers.selector import selector
 from homeassistant.components.sensor import ENTITY_ID_FORMAT, SensorDeviceClass
@@ -121,7 +124,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
 def _option_list(hass: HomeAssistant, device_name=None):
     errors = {}
-    kwh_sensor = _kwh_energy_sensors(hass, ['total_increasing'])
+    kwh_sensor = _kwh_energy_sensors(hass)
     if len(kwh_sensor) == 0:
         errors['energy_entity'] = 'entity_not_found'
     kwh_sensor.sort()
@@ -138,17 +141,27 @@ def _option_list(hass: HomeAssistant, device_name=None):
     ]
     return [options, errors]
 
-def _kwh_energy_sensors(hass: HomeAssistant, stateClass):
-    kwh_sensor = [
-        senosr
-        for senosr in hass.states.async_entity_ids("sensor")
-        if _attr_filter(hass, senosr, stateClass)
-    ]
-    return kwh_sensor if len(kwh_sensor) else []
 
-def _attr_filter(hass: HomeAssistant, sensor: str, stateClass):
+def _kwh_energy_sensors(hass: HomeAssistant):
+    stateClasses = ['total_increasing', 'total']
+
+    kwh_sensor = [
+        sensor
+        for sensor in hass.states.async_entity_ids("sensor")
+        if _attr_filter(hass, sensor, stateClasses)
+    ]
+
+    return kwh_sensor
+
+
+def _attr_filter(hass: HomeAssistant, sensor: str, stateClasses: AbstractSet[str]):
     state = hass.states.get(sensor)
+
     if '_kwhto_' in sensor:
         return False
-    return state.attributes.get(CONF_UNIT_OF_MEASUREMENT) == UnitOfEnergy.KILO_WATT_HOUR and state.attributes.get(CONF_DEVICE_CLASS) == SensorDeviceClass.ENERGY and state.attributes.get('state_class') in stateClass
 
+    is_unit_valid = state.attributes.get(CONF_UNIT_OF_MEASUREMENT) == UnitOfEnergy.KILO_WATT_HOUR
+    is_device_valid = state.attributes.get(CONF_DEVICE_CLASS) == SensorDeviceClass.ENERGY
+    is_state_valid = state.attributes.get('state_class') in stateClasses
+
+    return is_unit_valid and is_device_valid and is_state_valid
