@@ -220,6 +220,7 @@ template:
 | v1.4.8 | 2024.01.05 | HA Core 2025.01 대응  |
 | v1.4.9 | 2024.03.05 | HA Core 2025.01 대응  |
 | v1.4.10 | 2024.05.06 | HA Core 2025.04 대응  |
+| v1.5.0 | 2024.08.20 | 전력산업기반기금 인하 적용  |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
