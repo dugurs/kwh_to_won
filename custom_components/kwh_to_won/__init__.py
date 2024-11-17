@@ -31,19 +31,16 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the component."""
     data = hass.data.setdefault(DOMAIN, {})
 
     undo_listener = entry.add_update_listener(async_update_options)
     data[entry.entry_id] = {"undo_update_listener": undo_listener}
-    for platform in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, platform)
-        )
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
-
+    
 
 async def async_update_options(hass, entry: ConfigEntry):
     """Update options."""

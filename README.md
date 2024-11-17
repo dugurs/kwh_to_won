@@ -36,18 +36,20 @@
   `<config directory>/custom_components/kwh_to_won/`<br>
 - Home-Assistant 를 재시작합니다<br>
 ### HACS
-- HACS > Integretions > 우측상단 메뉴 > Custom repositories 선택
-- `https://github.com/dugurs/kwh_to_won` 주소 입력, Category에 'integration' 선택 후, 저장
-- HACS > Integretions 메뉴 선택 후, `kwh_to_won` 검색하여 설치
+- [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=kwh_to_won&owner=dugurs&category=integration)
+  - HACS > Integretions > 우측상단 메뉴 > Custom repositories 선택
+    - `https://github.com/dugurs/kwh_to_won` 주소 입력, Category에 'integration' 선택 후, 저장
+  - HACS > Integretions 메뉴 선택 후, `kwh_to_won` 검색하여 설치
 
 <br>
 
 ## 사용
 
 ### 통합구성요소 추가
-- 구성 > 통합구성요소 > 통합구성요소 추가하기 > 전기요금 계산 센서 > 필수요소를 모두 입력후, 확인.
+- [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=kwh_to_won)
+  - 설정 > 기기및서비스 > 통합구성요소 추가하기 > `kwh_to_won` 검색하여 추가
 - 월간 전기 사용량 센서는 다음과 같은 속성이어야 합니다.
-  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total_increasing`
+  - `unit_of_measurement: kWh`, `device_class: energy`, `state_class: total_increasing, total`
 - ~~전월 전기 사용량 센서는 다음과 같은 속성이어야 합니다.~~
   - ~~`unit_of_measurement: kWh`, `device_class: energy`, `state_class: total`~~
 - ~~예상 전기 사용량 센서는 다음과 같은 속성이어야 합니다.~~
@@ -113,7 +115,7 @@ template:
           attributes:
             state_class: total
 ```
-또는
+또는 (아래 자동화로 만드를 것을 추천)
 ```
 input_number:
   xxxx_energy_prev2_monthly:
@@ -217,7 +219,10 @@ template:
 | v1.4.7 | 2023.10.02 | 전전월 사용량 선택 입력 추가 |
 | v1.4.8 | 2024.01.05 | HA Core 2025.01 대응  |
 | v1.4.9 | 2024.03.05 | HA Core 2025.01 대응  |
-| v1.4.10 | 2024.05.06 | error fix |
+| v1.4.10 | 2024.05.06 | HA Core 2025.04 대응  |
+| v1.5.0 | 2024.08.20 | 전력산업기반기금 인하 적용  |
+| v1.5.1 | 2024.09.04 | 월간사용량 센서 total class 포함 수정 [@sanghoon](https://github.com/dugurs/kwh_to_won/pull/13) |
+| v1.5.2 | 2024.11.17 | HA Core 2025.05 대응 |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
