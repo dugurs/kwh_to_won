@@ -4,16 +4,6 @@ from dateutil.relativedelta import relativedelta
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-# # 로그의 출력 기준 설정 (아래 모두 주석처리!!)
-# _LOGGER.setLevel(logging.DEBUG)
-# # log 출력 형식
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# # log 출력
-# stream_handler = logging.StreamHandler()
-# stream_handler.setFormatter(formatter)
-# _LOGGER.addHandler(stream_handler)
-
-
 import collections
 from copy import deepcopy
 def merge(dict1, dict2):
@@ -226,6 +216,18 @@ PRICE_DC = {
 
 
 class kwh2won_api:
+    """한국 전력공사 전기요금 계산 API
+    
+    이 클래스는 한전의 전기요금 계산 규칙에 따라 사용량별 요금을 계산합니다.
+    
+    Attributes:
+        pressure (str): 전압 구분 ('low' 또는 'high')
+        checkDay (int): 검침일 (1-31)
+        today (datetime): 계산 기준일
+        bigfamDcCfg (int): 대가족 할인 설정
+        welfareDcCfg (int): 복지 할인 설정
+    """
+    
     def __init__(self, cfg):
         ret = {
             'energy': 0.0001,     # 사용량
@@ -293,15 +295,28 @@ class kwh2won_api:
 
     # 당월 단가 찾기
     def price_find(self, prices, yymm):
+        # 캐시 키 생성
+        cache_key = f"{id(prices)}_{yymm}"
+        
+        # 캐시된 결과가 있으면 반환
+        if hasattr(self, '_price_cache') and cache_key in self._price_cache:
+            return self._price_cache[cache_key]
+        
         cnt = -1
         listym = list(prices.keys())
-        for ym in listym :
+        for ym in listym:
             if ym <= yymm:
                 cnt += 1
-            else :
+            else:
                 break
-        if cnt == -1 :
+        if cnt == -1:
             cnt = 0
+        
+        # 결과 캐싱
+        if not hasattr(self, '_price_cache'):
+            self._price_cache = {}
+        self._price_cache[cache_key] = listym[cnt]
+        
         return listym[cnt]
 
 
@@ -855,53 +870,49 @@ class kwh2won_api:
 
 
     def kwh2won(self, energy, today=None) :
+        """전기 사용량에 따른 요금을 계산합니다.
         
-        _LOGGER.debug(f'########### 전기사용량 : {energy}')
-        energy = float(energy)
-        if energy == 0 :
-            self._ret['energy'] = 0.0001
-        else :
-            self._ret['energy'] = energy
+        Args:
+            energy (float): 전기 사용량 (kWh)
+            today (datetime, optional): 계산 기준일
+            
+        Returns:
+            dict: 계산된 요금 정보를 포함한 딕셔너리
+            
+        Raises:
+            ValueError: 잘못된 입력값이 제공된 경우
+        """ 
+        _LOGGER.debug(f'#### 전기사용량 계산 시작: {energy} kWh')
+        try:
+            energy = float(energy)
+            if energy == 0 :
+                self._ret['energy'] = 0.0001
+            else :
+                self._ret['energy'] = energy
 
-        if today:
-            self._ret['today'] = today
+            if today:
+                self._ret['today'] = today
 
-        _LOGGER.debug(f"오늘: {self._ret['today']}, 검침일: {self._ret['checkDay']}")
-        
+            _LOGGER.debug(f"## 계산 기준일: {self._ret['today']}, 검침일: {self._ret['checkDay']}")
+            
+            self.calc_lengthDays()    # 월길이
+            self.calc_lengthUseDays() # 동계, 하계, 기타 기간
+            self.set_price()          # 단가 설정
+            self.calc_prog()          # 기본요금, 전력량요금, 기후 환경요금 계산
+            self.calc_fuelWon()       # 연료비조정액
 
-        self.calc_lengthDays()    # 월길이
-        self.calc_lengthUseDays() # 동계, 하계, 기타 기간
-        self.set_price()          # 단가 설정
-        self.calc_prog()          # 기본요금, 전력량요금, 기후 환경요금 계산
-        self.calc_fuelWon()       # 연료비조정액
-
-        if (self._ret['bigfamDcCfg'] or self._ret['welfareDcCfg']) :
-            self.calc_weakDc() # 취약계층 경감액
-            self.calc_elecBasic200() # 200kWh 이하 감액
-            self.calc_welfareDc() # 복지할인
-            self.calc_bigfamDc()  # 대가족할인
-            self.calc_dc() # 중복할인 혹은 큰거
-        else : 
-            self.calc_elecBasic()    # 필수사용량 보장공제
+            if (self._ret['bigfamDcCfg'] or self._ret['welfareDcCfg']) :
+                self.calc_weakDc() # 취약계층 경감액
+                self.calc_elecBasic200() # 200kWh 이하 감액
+                self.calc_welfareDc() # 복지할인
+                self.calc_bigfamDc()  # 대가족할인
+                self.calc_dc() # 중복할인 혹은 큰거
+            else : 
+                self.calc_elecBasic()    # 필수사용량 보장공제
             
 
-        self.calc_total()         # 청구금액
-        return self._ret
-
-
-# # 테스트 용 , 주석처리 필
-# cfg = {
-#     'pressure' : 'low',
-#     'checkDay' : 11, # 검침일
-#     'today' : datetime.datetime(2024,6,24, 22,42,0), # 오늘
-#     # 'today': datetime.datetime.now(),
-#     'bigfamDcCfg' : 0, # 대가족 요금할인 1: 5인이상가구.출산가구.3자녀이상, 2: 생명유지장치
-#     'welfareDcCfg' : 0, # 복지 요금할인 1: 유공자 장애인, 2: 사회복지시설, 3: 기초생활(생계.의료), 4: 기초생활(주거,복지), 5: 차상위계층
-# }
-
-# K2W = kwh2won_api(cfg)
-# ret = K2W.kwh2won(400)
-# # K2W.calc_lengthDays()
-# # forc = K2W.energy_forecast(17)
-# # import pprint
-# # pprint.pprint(ret)
+            self.calc_total()         # 청구금액
+            return self._ret
+        except Exception as e:
+            _LOGGER.error(f"전기요금 계산 중 오류 발생: {str(e)}")
+            raise
