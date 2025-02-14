@@ -21,17 +21,22 @@ class TestKwh2WonAPI(unittest.TestCase):
         kwh2won_logger.addHandler(stream_handler)
 
     def setUp(self):
-        self.cfg = {
-            'pressure': 'low',
-            'checkDay': 11,
-            'today': datetime(2024, 6, 24, 22, 42, 0),
-            'bigfamDcCfg': 0,
-            'welfareDcCfg': 0,
-        }
-        self.K2W = kwh2won_api.kwh2won_api(self.cfg)
+        self.pressure = 'low'  # 'low' or 'high'
+        self.checkDay = 11
+        self.today = datetime(2024, 6, 24, 22, 42, 0)
+        self.bigfamDcCfg = 0  # 0, 1, or 2
+        self.welfareDcCfg = 0  # 0 to 5
+        self.kWh = 400
+        self.K2W = kwh2won_api.kwh2won_api(
+            pressure=self.pressure,
+            checkDay=self.checkDay,
+            today=self.today,
+            bigfamDcCfg=self.bigfamDcCfg,
+            welfareDcCfg=self.welfareDcCfg
+        )
 
     def test_kwh2won(self):
-        ret = self.K2W.kwh2won(400)
+        ret = self.K2W.kwh2won(self.kWh)
         self._LOGGER.debug(f'Result: {ret}')
         self.assertIsNotNone(ret)
 

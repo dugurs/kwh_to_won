@@ -14,7 +14,7 @@ import asyncio
 
 from homeassistant import util
 from homeassistant.helpers.entity import Entity, async_generate_entity_id
-from homeassistant.core import Event, EventStateChangedData, callback
+from homeassistant.core import Event, callback
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import DOMAIN, VERSION, MANUFACTURER, MODEL, PRESSURE_OPTION, BIGFAM_DC_OPTION, WELFARE_DC_OPTION
@@ -234,14 +234,13 @@ class ExtendSensor(SensorBase):
         self._energy = None
         self._energy_row = None
 
-        cfg = {
-            'pressure' : pressure_config, # 저압고압
-            'checkDay' : checkday_config, # 검침일
-            'today': datetime.datetime.now(), # 오늘
-            'bigfamDcCfg' : bigfam_dc_config, # 대가족 요금할인
-            'welfareDcCfg' : welfare_dc_config, # 복지 요금할인
-        }
-        self.KWH2WON = K2WAPI(cfg)
+        self.KWH2WON = K2WAPI(
+            pressure=pressure_config, # 저압고압
+            checkDay=checkday_config, # 검침일
+            today=datetime.datetime.now(), # 오늘
+            bigfamDcCfg=bigfam_dc_config, # 대가족 요금할인
+            welfareDcCfg=welfare_dc_config, # 복지 요금할인
+            )
 
         self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
         self._energy_row = self._energy
@@ -258,7 +257,7 @@ class ExtendSensor(SensorBase):
             return float(entity_state.state)
 
     @callback 
-    def energy_state_listener(self, event: Event[EventStateChangedData]) -> None:
+    def energy_state_listener(self, event: Event) -> None:
         """Handle temperature device state changes."""
         entity_id = event.data["entity_id"]
         old_state = event.data["old_state"]

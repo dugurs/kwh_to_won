@@ -1,0 +1,115 @@
+calculate:
+  description: "Calculate electricity bill based on kWh usage"
+  fields:
+    kwh:
+      name: "전기 사용량"
+      description: ""
+      example: 234.12
+      required: true
+      selector:
+        number:
+          min: 0
+          step: 0.01
+          mode: box
+    checkDay:
+      name: "검침일"
+      description: ""
+      example: 11
+      required: true
+      selector:
+        select:
+          options:
+            - value: 1
+              label: "1일"
+            - value: 2
+              label: "2일"
+            - value: 3
+              label: "3일"
+            - value: 4
+              label: "4일"
+            - value: 5
+              label: "5일"
+            - value: 8
+              label: "8일"
+            - value: 9
+              label: "9일"
+            - value: 10
+              label: "10일"
+            - value: 11
+              label: "11일"
+            - value: 12
+              label: "12일"
+            - value: 15
+              label: "15일"
+            - value: 16
+              label: "16일"
+            - value: 17
+              label: "17일"
+            - value: 18
+              label: "18일"
+            - value: 19
+              label: "19일"
+            - value: 22
+              label: "22일"
+            - value: 23
+              label: "23일"
+            - value: 24
+              label: "24일"
+            - value: 25
+              label: "25일"
+            - value: 26
+              label: "26일"
+            - value: 0
+              label: "말일"
+    today:
+      name: "계산일"
+      description: "The date for calculation"
+      example: "2024-06-24T22:42:00"
+      required: true
+      selector:
+        date:
+          mode: box
+    pressure:
+      name: "공급 전압"
+      description: ""
+      example: "low"
+      required: true
+      selector:
+        select:
+          options:
+            - value: low
+              label: "가정용 저압"
+            - value: high
+              label: "가정용 고압"
+    bigfamDcCfg:
+      name: "대가족 요금할인"
+      description: ""
+      example: 0
+      selector:
+        select:
+          options:
+            - value: 0
+              label: "해당없음"
+            - value: 1
+              label: "5인이상, 3자녀이상, 출산 가구"
+            - value: 2
+              label: "생명유지장치"
+    welfareDcCfg:
+      name: "복지할인"
+      description: ""
+      example: 0
+      selector:
+        select:
+          options:
+            - value: 0
+              label: "해당없음"
+            - value: 1
+              label: "유공자, 장애인"
+            - value: 2
+              label: "사회복지시설"
+            - value: 3
+              label: "기초생활(생계.의료)"
+            - value: 4
+              label: "기초생활(주거.교육)"
+            - value: 5
+              label: "차상위계층" 

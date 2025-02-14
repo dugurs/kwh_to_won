@@ -14,6 +14,8 @@ from homeassistant.helpers.device_registry import (
     async_entries_for_config_entry
 )
 
+from .services import async_setup_services
+
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["sensor"]
@@ -28,6 +30,10 @@ async def async_setup(hass: HomeAssistant, config: dict):
                     DOMAIN, context={CONF_SOURCE: SOURCE_IMPORT}, data=entry
                 )
             )
+
+    # 서비스 등록
+    await async_setup_services(hass, config)
+
     return True
 
 
@@ -65,3 +71,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+

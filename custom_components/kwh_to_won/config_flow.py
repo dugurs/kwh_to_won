@@ -87,11 +87,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     #     )
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle a option flow for Damda Pad."""
+    """Handle a option flow """
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        self.config_entry = config_entry
+        super().__init__(config_entry)
+        # self.config_entry = config_entry
+        # Add any other initialization code here if needed
 
     async def async_step_init(self, user_input=None):
         """Handle options flow."""

@@ -228,15 +228,16 @@ class kwh2won_api:
         welfareDcCfg (int): 복지 할인 설정
     """
     
-    def __init__(self, cfg):
-        ret = {
+    def __init__(self, pressure='low', checkDay=1, today=None, bigfamDcCfg=0, welfareDcCfg=0):
+        if today is None:
+            today = datetime.datetime.now()
+        self._ret = {
+            'pressure': pressure,
+            'checkDay': checkDay,# 검침일
+            'today': today,
+            'bigfamDcCfg': bigfamDcCfg,# 대가족 요금할인
+            'welfareDcCfg': welfareDcCfg, # 복지 요금할인
             'energy': 0.0001,     # 사용량
-            'pressure' : 'low',
-            'checkDay' : 0, # 검침일
-            # 'today' : datetime.datetime(2022,7,10, 1,0,0), # 오늘
-            'today': datetime.datetime.now(),
-            'bigfamDcCfg' : 0, # 대가족 요금할인
-            'welfareDcCfg' : 0, # 복지 요금할인
             'checkYear':0, # 검침년
             'checkMonth':0, # 검침월
             'monthDays': 0, # 월일수
@@ -288,9 +289,7 @@ class kwh2won_api:
             'baseFund': 0, # 전력산업기반기금
             'total': 0, # 청구금액
         }
-        ret.update(cfg)
-        self._ret = ret
-
+        self.calc_lengthDays() # 사용일 구하기 호출
 
 
     # 당월 단가 찾기
@@ -495,7 +494,7 @@ class kwh2won_api:
     #  예시에 따라 아래와 같이 계산됩니다(기본요금·연료비조정요금 미반영). 
     # ==================================================== 
     #  (예시) 사용기간 `22. 3. 11 ~ `22. 4. 10, 검침일 11일, 사용량 350kWh 
-    #   * ’22.4.1일부로 현행 전력량요금에서 +4.9원/㎾h 인상 적용 
+    #   * '22.4.1일부로 현행 전력량요금에서 +4.9원/㎾h 인상 적용 
     # ==================================================== 
     #   가. 전력량요금 : 45,648원(원 미만 절사) 
     #    ○ (1단계) 200kWh×88.3원×(21/31)일 + 200kWh×93.2원×(10/31)일 = 17,976원 
