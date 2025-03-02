@@ -237,7 +237,8 @@ template:
 | v1.5.0 | 2024.08.20 | 전력산업기반기금 인하 적용  |
 | v1.5.1 | 2024.09.04 | 월간사용량 센서 total class 포함 수정 [@sanghoon](https://github.com/dugurs/kwh_to_won/pull/13) |
 | v1.5.2 | 2024.11.17 | HA Core 2025.05 대응 |
-| v1.6.0 | 2025.02.14 | 액션 서비스 추가 (action: kwh_to_won.calculate)) |
+| v1.6.0 | 2025.02.14 | 액션 서비스 추가 (action: kwh_to_won.calculate) |
+| v1.6.1 | 2025.03.02 | 구성 진입 오류 수정 |
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
