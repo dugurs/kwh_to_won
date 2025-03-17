@@ -16,9 +16,8 @@ def merge(dict1, dict2):
             result[key] = deepcopy(dict2[key])
     return result
 
-
-# https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00101.jsp
-
+# 전기요금 계산(주거용)
+# https://online.kepco.co.kr/PRM033D00
 
 PRICE_BASE = {
     'low': {
@@ -94,17 +93,13 @@ PRICE_KWH = {
 }
 
 # 환경비용차감 + 기후환경요금 + 연료비조정액
+# https://home.kepco.co.kr/kepco/PR/ntcob/list.do?pageIndex=1&boardSeq=0&boardCd=BRD_000252&menuCd=FN060309&parnScrpSeq=0&searchCondition=total&searchKeyword=%EC%97%B0%EB%A3%8C%EB%B9%84
 PRICE_ADJUSTMENT = {
     '2101': { 'adjustment' : [5, 5.3, -3] },
     '2109': { 'adjustment' : [5, 5.3, 0] }, # RPS 4.5 + ETS 0.5, 석탄발전 감축비용 0.3
-    '2201': { 'adjustment' : [5, 5.3, 3] }, 
-    '2204': { 'adjustment' : [6.7, 7.3, 3] }, # RPS 5.9 + ETS 0.8, 석탄발전 감축비용 0.6
+    '2204': { 'adjustment' : [6.7, 7.3, 0] }, # RPS 5.9 + ETS 0.8, 석탄발전 감축비용 0.6
     '2207': { 'adjustment' : [6.7, 7.3, 5] }, # RPS 5.9 + ETS 0.8, 석탄발전 감축비용 0.6, 연료비 조정액 +5원
     '2301': { 'adjustment' : [8.8, 9, 5] }, # RPS 7.7 + ETS 1.1, 석탄발전 감축비용 0.2, 연료비 조정액 +5원
-    '2309': { 'adjustment' : [8.8, 9, -1.8] },
-    '2401': { 'adjustment' : [8.8, 9, -4] },
-    '2404': { 'adjustment' : [8.8, 9, -2.5] },
-    '2407': { 'adjustment' : [8.8, 9, -5] },
 }
 
 # 전력산업기금 요율
