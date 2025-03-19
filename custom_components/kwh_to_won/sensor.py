@@ -245,6 +245,10 @@ class ExtendSensor(SensorBase):
         self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
         self._energy_row = self._energy
 
+        # _forecast_energy_entity 상태 변경 리스너 추가
+        if self._forecast_energy_entity:
+            self.setStateListener(hass, self._forecast_energy_entity, self.forecast_energy_state_listener)
+
         # self.hass.states.get(self._energy_entity)
         self.update()
 
@@ -258,20 +262,46 @@ class ExtendSensor(SensorBase):
 
     @callback 
     def energy_state_listener(self, event: Event) -> None:
-        """Handle temperature device state changes."""
+        """Handle energy state changes."""
         entity_id = event.data["entity_id"]
         old_state = event.data["old_state"]
         new_state = event.data["new_state"]
+
         if _is_valid_state(new_state):
-            self._energy = util.convert(new_state.state, float)
-            self._energy_row = self._energy
+            new_energy = util.convert(new_state.state, float)
+            if self._energy != new_energy:  # 상태가 변경된 경우에만 업데이트
+                _LOGGER.debug(f"energy state changed: {new_state.state}")
+                self._energy = new_energy
+                self._energy_row = self._energy
+                if self.enabled:
+                    self.hass.async_create_task(
+                        self.async_update_ha_state(True)
+                    )
+
+    @callback
+    def forecast_energy_state_listener(self, event: Event) -> None:
+        """Handle forecast energy entity state changes."""
+        entity_id = event.data["entity_id"]
+        old_state = event.data["old_state"]
+        new_state = event.data["new_state"]
+
+        if new_state is None or new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]:
+            _LOGGER.warning(f"Forecast energy entity {entity_id} is unavailable or unknown.")
+            self._state = "unknown"  # 기본값 설정
+            return
+
+        try:
+            forecast_energy_value = float(new_state.state)
+        except ValueError:
+            _LOGGER.warning(f"Forecast energy entity {entity_id} has non-numeric state: {new_state.state}")
+            self._state = "unknown"  # 기본값 설정
+            return
+
+        _LOGGER.debug(f"Forecast energy entity {entity_id} state changed: {forecast_energy_value}")
         if self.enabled:
             self.hass.async_create_task(
-                self.async_update_ha_state(True),
-                # f"Entity schedule update ha state {self.entity_id}",
-                # eager_start=True,
+                self.async_update_ha_state(True)
             )
-
 
     def unique_id(self):
         """Return Unique ID string."""
@@ -347,12 +377,19 @@ class ExtendSensor(SensorBase):
                     self._state = forecast['forecast']
                 else:
                     _LOGGER.debug(f"####  self._forecast_energy_entity {self._forecast_energy_entity}")
-                    forecast_energy_entity_state = self.hass.states.get(self._forecast_energy_entity).state # 예상사용량센서가 UNKNOWN 상태이면
-                    _LOGGER.debug(f"####  forecast_energy_entity_state {forecast_energy_entity_state}")
-                    if forecast_energy_entity_state == "unknown":
-                        return 0
+                    forecast_energy_entity_state = self.hass.states.get(self._forecast_energy_entity)
+                    if forecast_energy_entity_state is None or forecast_energy_entity_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]:
+                        _LOGGER.warning(f"Forecast energy entity {self._forecast_energy_entity} is unavailable or unknown.")
+                        self._state = "unknown"  # 기본값 설정
+                        return
+                    try:
+                        forecast_energy_value = float(forecast_energy_entity_state.state)
+                    except ValueError:
+                        _LOGGER.warning(f"Forecast energy entity {self._forecast_energy_entity} has non-numeric state: {forecast_energy_entity_state.state}")
+                        self._state = "unknown"  # 기본값 설정
+                        return
                     forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
-                    self._state = forecast_energy_entity_state
+                    self._state = forecast_energy_value
 
                 self._extra_state_attributes['사용량'] = self._energy
                 self._extra_state_attributes['검침시작일'] = str(forecast['checkMonth']) +'월 '+ str(forecast['checkDay']) + '일'
@@ -374,10 +411,11 @@ class ExtendSensor(SensorBase):
                         forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
                         forecast_energy = forecast['forecast']
                     else:
-                        forecast_energy_entity_state = self.hass.states.get(self._forecast_energy_entity).state # 예상사용량센서가 UNKNOWN 상태이면
-                        if forecast_energy_entity_state == "unknown":
+                        forecast_energy_entity_state = self.hass.states.get(self._forecast_energy_entity)
+                        if forecast_energy_entity_state is None or forecast_energy_entity_state.state == "unknown":
+                            self._state = "unknown"
                             return 0
-                        forecast_energy = forecast_energy_entity_state
+                        forecast_energy = forecast_energy_entity_state.state
 
                     ret = self.KWH2WON.kwh2won(forecast_energy, datetime.datetime.now())
                     self._extra_state_attributes['예상사용량'] = forecast_energy
