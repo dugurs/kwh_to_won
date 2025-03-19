@@ -91,14 +91,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        super().__init__()
-        self.config_entry = config_entry
+        self._config_entry = config_entry  # 로컬 변수로 저장
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle options flow."""
         errors = {}
 
-        conf = self.config_entry
+        conf = self._config_entry  # 로컬 변수로 접근
         if conf.source == config_entries.SOURCE_IMPORT:
             return self.async_show_form(step_id="init", data_schema=None)
         if user_input is not None:
