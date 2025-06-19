@@ -23,10 +23,10 @@ class TestKwh2WonAPI(unittest.TestCase):
     def setUp(self):
         self.pressure = 'low'  # 'low' or 'high'
         self.checkDay = 11
-        self.today = datetime(2025, 3, 10, 22, 42, 0)
-        self.bigfamDcCfg = 0  # 0, 1, or 2
+        self.today = datetime(2025, 7, 10, 22, 42, 0)
+        self.bigfamDcCfg = 1  # 0, 1, or 2
         self.welfareDcCfg = 0  # 0 to 5
-        self.kWh = 260
+        self.kWh = 300
         self.K2W = kwh2won_api.kwh2won_api(
             pressure=self.pressure,
             checkDay=self.checkDay,

@@ -241,6 +241,8 @@ template:
 | v1.6.1 | 2025.03.02 | 구성 진입 오류 수정 |
 | v1.6.2 | 2025.03.17 | ~~연료비조정액 누략 반영~~ |
 | v1.6.3 | 2025.03.19 | 구성진입 500에러 수정, 예산사용량센서 로딩 문제 해결 |
+| v1.6.4 | 2025.06.19 | 요금동결할인 변경 단가 반영 [@Murianwind](https://github.com/dugurs/kwh_to_won/issues/17) |
+
 
 ## 도움
 - https://github.com/oukene/extend_temperature <br>
