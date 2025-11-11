@@ -2,6 +2,9 @@ import math
 import datetime
 from dateutil.relativedelta import relativedelta
 import logging
+import json # JSON 라이브러리 추가
+from pathlib import Path # 파일 경로 처리를 위한 Path 라이브러리 추가
+
 _LOGGER = logging.getLogger(__name__)
 
 import collections
@@ -16,9 +19,27 @@ def merge(dict1, dict2):
             result[key] = deepcopy(dict2[key])
     return result
 
+# 파일 I/O를 클래스 외부에서 단 한 번만 실행하여 클래스 변수에 저장합니다.
+def _load_rates_data():
+    """요금 정보 JSON 파일을 로드하여 딕셔너리로 반환합니다."""
+    try:
+        rates_path = Path(__file__).parent / "rates.json"
+        with open(rates_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        _LOGGER.error(f"요금 정보 파일(rates.json)을 로드하는 데 실패했습니다: {e}")
+        return None
+
+# 통합 구성요소가 로드될 때 단 한번만 파일을 읽어 RATES_DATA 변수에 저장합니다.
+RATES_DATA = _load_rates_data()
+
+# --- [기존 요금 정보 딕셔너리 전체 삭제] ---
+# PRICE_BASE, PRICE_KWH, PRICE_ADJUSTMENT, BASE_FUND, PRICE_ELECBASIC, PRICE_DC 딕셔너리들이 있던 부분을 모두 삭제합니다.
+# 이 정보는 이제 rates.json 파일에서 로드됩니다.
 # 전기요금 계산(주거용)
 # https://online.kepco.co.kr/PRM033D00
-
+# 요금 정보 예시
+"""
 PRICE_BASE = {
     'low': {
         'basicPrice' : [910, 1600, 7300, 7300],    # 기본요금(원/호)
@@ -67,25 +88,8 @@ PRICE_BASE = {
     }
 }
 
-
 # 전력량 요금(원/kWh) - (환경비용차감을 반영한 단가)
 PRICE_KWH = {
-    '2101': {
-        'low':  { 'kwhPrice' : [88.3, 182.9, 275.6, 704.5] }, # 저압
-        'high': { 'kwhPrice' : [73.3, 142.3, 210.6, 569.6] }  # 고압
-    },
-    '2204': { # 4.9원 인상
-        'low':  { 'kwhPrice' : [93.2, 187.8, 280.5, 709.4] },
-        'high': { 'kwhPrice' : [78.2, 147.2, 215.5, 574.5] }
-    },
-    '2210': { # 예정 인상분 4.9원 + 추가 인상 2.5원
-        'low':  { 'kwhPrice' : [100.6, 195.2, 287.9, 716.8] },
-        'high': { 'kwhPrice' : [85.6, 154.6, 222.9, 581.9] }
-    },
-    '2301': { # 11.4원 인상
-        'low':  { 'kwhPrice' : [112.0, 206.6, 299.3, 728.2] },
-        'high': { 'kwhPrice' : [97.0, 166.0, 234.3, 593.3] }
-    },
     '2305': { # 8원 인상, 5월 16일 부터 적용 (월단위 계산방식이라 5월1일부터 계산되어 오차 발생) 
         'low':  { 'kwhPrice' : [120.0, 214.6, 307.3, 736.2] },
         'high': { 'kwhPrice' : [105.0, 174.0, 242.3, 601.3] }
@@ -93,32 +97,17 @@ PRICE_KWH = {
 }
 
 # 환경비용차감 + 기후환경요금 + 연료비조정액
-# https://home.kepco.co.kr/kepco/PR/ntcob/list.do?pageIndex=1&boardSeq=0&boardCd=BRD_000252&menuCd=FN060309&parnScrpSeq=0&searchCondition=total&searchKeyword=%EC%97%B0%EB%A3%8C%EB%B9%84
 PRICE_ADJUSTMENT = {
-    '2101': { 'adjustment' : [5, 5.3, -3] },
-    '2109': { 'adjustment' : [5, 5.3, 0] }, # RPS 4.5 + ETS 0.5, 석탄발전 감축비용 0.3
-    '2204': { 'adjustment' : [6.7, 7.3, 0] }, # RPS 5.9 + ETS 0.8, 석탄발전 감축비용 0.6
-    '2207': { 'adjustment' : [6.7, 7.3, 5] }, # RPS 5.9 + ETS 0.8, 석탄발전 감축비용 0.6, 연료비 조정액 +5원
     '2301': { 'adjustment' : [8.8, 9, 5] }, # RPS 7.7 + ETS 1.1, 석탄발전 감축비용 0.2, 연료비 조정액 +5원
 }
 
 # 전력산업기금 요율
 BASE_FUND = {
-    '2101': { 'baseFundp': 0.037 },
-    '2407': { 'baseFundp': 0.032 },
     '2507': { 'baseFundp': 0.027 },
 }
 
 # 필수사용량보장공제 [최대할인액, 사용량]
 PRICE_ELECBASIC = {
-    '2101': {
-        'low':  { 'elecBasicLimit' : [4000, 200] },
-        'high': { 'elecBasicLimit' : [2500, 200] }
-    },
-    '2109': {
-        'low':  { 'elecBasicLimit' : [2000, 200] },
-        'high': { 'elecBasicLimit' : [1500, 200] }
-    },
     '2207': {
         'low':  { 'elecBasicLimit' : [0, 200] },
         'high': { 'elecBasicLimit' : [0, 200] }
@@ -127,114 +116,6 @@ PRICE_ELECBASIC = {
 
 # 할인
 PRICE_DC = {
-    '2101': {},
-    '2207': {
-        'dc': {
-            'etc': {
-                'a1': [22000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,   # 생명유지장치
-                'b1': 23600, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 23900, # 기초생활(생계.의료)
-                'b4': 15600, # 기초생활(주거.교육)
-                'b5': 12600,  # 차사위계층
-            },
-            'summer': { # 6월 ~ 8월
-                'a1': [22000, 0.3],
-                'a2': 0.3,
-                'b1': 29600,
-                'b2': 0.3,
-                'b3': 29600,
-                'b4': 18600,
-                'b5': 15600,
-            }
-        }
-    },
-    '2210': {
-        'dc': {
-            'etc': {
-                'a1': [22000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,   # 생명유지장치
-                'b1': 22000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 23900, # 기초생활(생계.의료)
-                'b4': 14000, # 기초생활(주거.교육)
-                'b5': 11000,  # 차사위계층
-            }
-        }
-    },
-    '2301': {
-        'dc': {
-            'etc': {
-                'a1': [16000, 0.3] , # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,   # 생명유지장치
-                'b1': 16000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 16000, # 기초생활(생계.의료)
-                'b4': 10000, # 기초생활(주거.교육)
-                'b5': 8000,  # 차사위계층
-                'weak': [13.1, 313], # 취약계 경감 단가,최대사용량
-            },
-            'summer': { # 6월 ~ 8월
-                'a1': [16000, 0.3],
-                'a2': 0.3,
-                'b1': 20000,
-                'b2': 0.3,
-                'b3': 20000,
-                'b4': 12000,
-                'b5': 10000,
-                'weak': [13.1, 313],
-            }
-        }
-    },
-    '2306': {
-        'dc': {
-            'etc': {
-                'a1': [16000, 0.3] , # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,   # 생명유지장치
-                'b1': 16000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 16000, # 기초생활(생계.의료)
-                'b4': 10000, # 기초생활(주거.교육)
-                'b5': 8000,  # 차상위계층
-                'weak': [21.1, 313], # 취약계 경감 단가,최대사용량
-            },
-            'summer': { # 6월 ~ 8월
-                'a1': [16000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,  # 생명유지장치
-                'b1': 20000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 20000, # 기초생활(생계.의료)
-                'b4': 12000, # 기초생활(주거.교육)
-                'b5': 10000, # 차상위계층
-                'weak': [21.1, 313], # 취약계 경감 단가,최대사용량
-            }
-        }
-    },
-    '2501': {
-        'dc': {
-            'etc': {
-                'a1': [16000, 0.3] , # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,   # 생명유지장치
-                'b1': 16000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 16000, # 기초생활(생계.의료)
-                'b4': 10000, # 기초생활(주거.교육)
-                'b5': 8000,  # 차상위계층
-                'weak': [8, 313], # 취약계 경감 단가,최대사용량
-            },
-            'summer': { # 6월 ~ 8월
-                'a1': [16000, 0.3], # 5인이상 가구,출산가구,3자녀이상 가구
-                'a2': 0.3,  # 생명유지장치
-                'b1': 20000, # 독립유공자,국가유공자,5.18민주유공자,장애인 
-                'b2': 0.3,   # 사회복지시설
-                'b3': 20000, # 기초생활(생계.의료)
-                'b4': 12000, # 기초생활(주거.교육)
-                'b5': 10000, # 차상위계층
-                'weak': [8, 313], # 취약계 경감 단가,최대사용량
-            }
-        }
-    },
     '2504': {
         'dc': {
             'etc': {
@@ -260,7 +141,7 @@ PRICE_DC = {
         }
     }
 }
-
+"""
 
 class kwh2won_api:
     """한국 전력공사 전기요금 계산 API
@@ -276,8 +157,14 @@ class kwh2won_api:
     """
     
     def __init__(self, pressure='low', checkDay=1, today=None, bigfamDcCfg=0, welfareDcCfg=0):
+        # 파일에서 직접 읽는 대신, 메모리에 로드된 클래스 변수를 사용합니다.
+        if RATES_DATA is None:
+            raise ValueError("요금 정보(RATES_DATA)가 유효하지 않습니다. rates.json 파일을 확인하세요.")
+        self.RATES = RATES_DATA
+        
         if today is None:
             today = datetime.datetime.now()
+            
         self._ret = {
             'pressure': pressure,
             'checkDay': checkDay,# 검침일
@@ -464,7 +351,7 @@ class kwh2won_api:
         checkMonth = self._ret['checkMonth']
         monthDays = self._ret['monthDays']
         energy = self._ret['energy'] # 사용전력
-        supersection = PRICE_BASE['low']['kwhSection']['winter'][2]
+        supersection = self.RATES['PRICE_BASE']['low']['kwhSection']['winter'][2]
         etc = 0
         winter = 0
         summer = 0
@@ -498,10 +385,10 @@ class kwh2won_api:
             self._ret[mm]['season'] = season
             self._ret[mm]['useDays'] = monthleng
 
-            adjustYymm = self.price_find(PRICE_ADJUSTMENT, yymm) 
-            kwhYymm = self.price_find(PRICE_KWH, yymm)
-            elecbacictYymm = self.price_find(PRICE_ELECBASIC, yymm)
-            dcYymm = self.price_find(PRICE_DC, yymm)
+            adjustYymm = self.price_find(self.RATES['PRICE_ADJUSTMENT'], yymm) 
+            kwhYymm = self.price_find(self.RATES['PRICE_KWH'], yymm)
+            elecbacictYymm = self.price_find(self.RATES['PRICE_ELECBASIC'], yymm)
+            dcYymm = self.price_find(self.RATES['PRICE_DC'], yymm)
             _LOGGER.debug(f'{mm} : season {season} + adjust {adjustYymm} + kwh {kwhYymm} + elecbacict {elecbacictYymm} + dc {dcYymm}')
             mmdiff.append(season + adjustYymm + kwhYymm + elecbacictYymm + dcYymm)
 
@@ -520,16 +407,16 @@ class kwh2won_api:
     def set_price(self):
         for mm in ['mm1','mm2'] :
             yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm_ADJST = self.price_find(PRICE_ADJUSTMENT, yymm) # 환경비용차감 + 기후환경요금 + 연료비조정액
-            calcPrice = merge(PRICE_BASE, PRICE_ADJUSTMENT[priceYymm_ADJST])
-            priceYymm_KWH = self.price_find(PRICE_KWH, yymm) # 전력량 요금
-            calcPrice = merge(calcPrice, PRICE_KWH[priceYymm_KWH])
-            priceYymm = self.price_find(PRICE_ELECBASIC, yymm) # 필수사용량보장공제
-            calcPrice = merge(calcPrice, PRICE_ELECBASIC[priceYymm])
-            priceYymm = self.price_find(PRICE_DC, yymm) # 할인
-            calcPrice = merge(calcPrice, PRICE_DC[priceYymm])
-            priceYymm = self.price_find(BASE_FUND, yymm) # 전력산업기금 요율
-            self._ret[mm]['price'] = merge(calcPrice, BASE_FUND[priceYymm])
+            priceYymm_ADJST = self.price_find(self.RATES['PRICE_ADJUSTMENT'], yymm) # 환경비용차감 + 기후환경요금 + 연료비조정액
+            calcPrice = merge(self.RATES['PRICE_BASE'], self.RATES['PRICE_ADJUSTMENT'][priceYymm_ADJST])
+            priceYymm_KWH = self.price_find(self.RATES['PRICE_KWH'], yymm) # 전력량 요금
+            calcPrice = merge(calcPrice, self.RATES['PRICE_KWH'][priceYymm_KWH])
+            priceYymm = self.price_find(self.RATES['PRICE_ELECBASIC'], yymm) # 필수사용량보장공제
+            calcPrice = merge(calcPrice, self.RATES['PRICE_ELECBASIC'][priceYymm])
+            priceYymm = self.price_find(self.RATES['PRICE_DC'], yymm) # 할인
+            calcPrice = merge(calcPrice, self.RATES['PRICE_DC'][priceYymm])
+            priceYymm = self.price_find(self.RATES['BASE_FUND'], yymm) # 전력산업기금 요율
+            self._ret[mm]['price'] = merge(calcPrice, self.RATES['BASE_FUND'][priceYymm])
             _LOGGER.debug(f"단가검색연월: {yymm}, 요금단가 적용: {priceYymm_KWH}, 환경비용 조정액 적용: {priceYymm_ADJST}, energy: {self._ret['energy']}")
 
 
@@ -553,7 +440,7 @@ class kwh2won_api:
 
         energy = self._ret['energy'] # 사용전력
         pressure = self._ret['pressure'] # 계약전력
-        basicPrice = PRICE_BASE[pressure]['basicPrice'] # 기본요금(원/호)
+        basicPrice = self.RATES['PRICE_BASE'][pressure]['basicPrice'] # 기본요금(원/호)
         monthDays = self._ret['monthDays'] # 월일수
         basicWonSum = 0
         kwhWonSum = 0
@@ -567,7 +454,7 @@ class kwh2won_api:
             if (seasonDays == 0) :
                 continue
             yymm = self._ret[mm]['yymm'] # 사용연월
-            priceYymm = self.price_find(PRICE_KWH, yymm) # 단가월
+            priceYymm = self.price_find(self.RATES['PRICE_KWH'], yymm) # 단가월
             calcPrice = self._ret[mm]['price'] # 단가
             diffPrice = calcPrice['adjustment'][0] # 환경비용차감 단가
             climatePrice = calcPrice['adjustment'][1] # 기후환경요금 단가
@@ -700,7 +587,7 @@ class kwh2won_api:
                 if (seasonDays == 0) :
                     continue
                 yymm = self._ret[mm]['yymm'] # 사용연월
-                priceYymm = self.price_find(PRICE_DC, yymm)
+                priceYymm = self.price_find(self.RATES['PRICE_DC'], yymm)
                 calcPrice = self._ret[mm]['price']
                 if yymm[-2:] in ['06', '07', '08'] :
                     season = 'summer'
@@ -742,7 +629,7 @@ class kwh2won_api:
                 if (seasonDays == 0) :
                     continue
                 yymm = self._ret[mm]['yymm'] # 사용연월
-                priceYymm = self.price_find(PRICE_DC, yymm)
+                priceYymm = self.price_find(self.RATES['PRICE_DC'], yymm)
                 calcPrice = self._ret[mm]['price']
                 if yymm[-2:] in ['06', '07', '08'] :
                     season = 'summer'
@@ -803,7 +690,7 @@ class kwh2won_api:
                 if (seasonDays == 0) :
                     continue
                 yymm = self._ret[mm]['yymm'] # 사용연월
-                priceYymm = self.price_find(PRICE_DC, yymm)
+                priceYymm = self.price_find(self.RATES['PRICE_DC'], yymm)
                 calcPrice = self._ret[mm]['price']
                 if yymm[-2:] in ['06', '07', '08'] :
                     season = 'summer'
