@@ -1,17 +1,17 @@
 """Config flow for Damda Weather integration."""
 from __future__ import annotations
 
-from typing import AbstractSet
+from typing import AbstractSet, Any
 from tokenize import Number
 from urllib.parse import quote_plus, unquote
 
 import voluptuous as vol
 from homeassistant.const import CONF_DEVICE_CLASS, CONF_UNIT_OF_MEASUREMENT, UnitOfEnergy
-from homeassistant.core import callback
+from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers.selector import selector
 from homeassistant.components.sensor import ENTITY_ID_FORMAT, SensorDeviceClass
 
-from homeassistant import config_entries
+from homeassistant import config_entries, data_entry_flow
 
 from .const import DOMAIN, CHECKDAY_OPTION, BIGFAM_DC_OPTION, WELFARE_DC_OPTION, PRESSURE_OPTION
 
@@ -30,21 +30,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             return self.async_create_entry(title=user_input['device_name'], data=user_input)
             
-        option_list, errors = _option_list(self.hass)
-        data_schema = {vol.Required('device_name'): str}
-        for name, required, default, validation in option_list:
-            if required == "required":
-                key = (
-                    vol.Required(name, default=default)
-                )
-            else:
-                key = (
-                    vol.Optional(name, default=default)
-                )
-            data_schema[key] = validation
+        data_schema = vol.Schema({
+            vol.Required('device_name'): str,
+            **_option_schema(self.hass)
+        })
+        
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(data_schema),
+            data_schema=self.add_suggested_values_to_schema(data_schema, user_input),
             errors=errors
         )
 
@@ -95,53 +88,66 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> data_entry_flow.FlowResult:
         """Handle options flow."""
-        errors = {}
-
-        conf = self._config_entry  # 로컬 변수로 접근
+        conf = self._config_entry
         if conf.source == config_entries.SOURCE_IMPORT:
             return self.async_show_form(step_id="init", data_schema=None)
+
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        option_list, errors = _option_list(self.hass, conf.data.get('device_name'))
-        options_schema = {}
-        for name, required, default, validation in option_list:
-            to_default = conf.options.get(name, conf.data.get(name, default))
-            if required == "required":
-                key = (
-                    vol.Required(name, default=to_default)
-                )
-            else:
-                key = (
-                    vol.Optional(name, default=to_default)
-                )
-            options_schema[key] = validation
+        options_schema = vol.Schema(_option_schema(self.hass, conf))
+        
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(options_schema),
-            errors=errors
+            data_schema=self.add_suggested_values_to_schema(options_schema, user_input or conf.options or conf.data),
         )
 
-def _option_list(hass: HomeAssistant, device_name=None):
-    errors = {}
+def _option_schema(hass: HomeAssistant, config_entry: config_entries.ConfigEntry | None = None):
+    """Return the schema for the options."""
     kwh_sensor = _kwh_energy_sensors(hass)
-    if len(kwh_sensor) == 0:
-        errors['energy_entity'] = 'entity_not_found'
     kwh_sensor.sort()
-    options = [
-        ("energy_entity", "required", "", selector({"entity": {"include_entities": kwh_sensor}})),
-        ("checkday_config", "required", 1, vol.In(CHECKDAY_OPTION)),
-        ("pressure_config", "required", "low", vol.In(PRESSURE_OPTION)),
-        ("bigfam_dc_config", "required", 0, vol.In(BIGFAM_DC_OPTION)),
-        ("welfare_dc_config", "required", 0, vol.In(WELFARE_DC_OPTION)),
-        ("forecast_energy_entity", "optional", "", str),
-        ("prev_energy_entity", "optional", "", str),
-        ("prev2_energy_entity", "optional", "", str),
-        ("calibration_config", "required", 1, vol.All(vol.Coerce(float), vol.Range(min=0, max=2)))
-    ]
-    return [options, errors]
+    
+    schema = {
+        vol.Required("energy_entity"): selector({"entity": {"include_entities": kwh_sensor}}),
+        vol.Required("checkday_config"): selector({
+            "select": {
+                "options": [{"value": str(k), "label": v} for k, v in CHECKDAY_OPTION.items()],
+                "mode": "dropdown"
+            }
+        }),
+        vol.Required("pressure_config"): selector({
+            "select": {
+                "options": [{"value": k, "label": v} for k, v in PRESSURE_OPTION.items()],
+                "mode": "dropdown"
+            }
+        }),
+        vol.Required("bigfam_dc_config"): selector({
+            "select": {
+                "options": [{"value": str(k), "label": v} for k, v in BIGFAM_DC_OPTION.items()],
+                "mode": "dropdown"
+            }
+        }),
+        vol.Required("welfare_dc_config"): selector({
+            "select": {
+                "options": [{"value": str(k), "label": v} for k, v in WELFARE_DC_OPTION.items()],
+                "mode": "dropdown"
+            }
+        }),
+        vol.Optional("forecast_energy_entity"): str,
+        vol.Optional("prev_energy_entity"): str,
+        vol.Optional("prev2_energy_entity"): str,
+        vol.Required("calibration_config"): selector({
+            "number": {
+                "min": 0,
+                "max": 2,
+                "step": 0.01,
+                "mode": "box"
+            }
+        }),
+    }
+    return schema
 
 
 def _kwh_energy_sensors(hass: HomeAssistant):
