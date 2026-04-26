@@ -1,4 +1,4 @@
-"""The Detailed Hello World Push integration."""
+"""kWh to Won integration."""
 import asyncio
 import logging
 
@@ -27,7 +27,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         for entry in config[DOMAIN]:
             hass.async_create_task(
                 hass.config_entries.flow.async_init(
-                    DOMAIN, context={CONF_SOURCE: SOURCE_IMPORT}, data=entry
+                    DOMAIN, context={CONF_SOURCE: config_entries.SOURCE_IMPORT}, data=entry
                 )
             )
 

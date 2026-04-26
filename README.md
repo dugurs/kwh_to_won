@@ -244,6 +244,7 @@ template:
 | v1.6.4 | 2025.06.19 | 요금동결할인 변경 단가 반영 [@Murianwind](https://github.com/dugurs/kwh_to_won/issues/17) |
 | v1.6.5 | 2025.07.30 | 기타계절(6~8월제외) 복지할인 단가 오류 수정 |
 | v1.7.0 | 2025.11.11 | 요금정보를 rates.json 파일로 분리, sensor 디바운싱 로직 적용 |
+| v1.7.1 | 2026.04.26 | config_flow 오류 수정 |
 
 
 

@@ -34,7 +34,7 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         today_str = call.data.get('today')
         bigfamDcCfg = call.data.get('bigfamDcCfg')
         welfareDcCfg = call.data.get('welfareDcCfg')
-        _LOGGER.error(f"전기요금 계산 : kwh:{kwh} pressure:{pressure} checkDay:{checkDay} today:{today_str} bigfamDcCfg:{bigfamDcCfg} welfareDcCfg:{welfareDcCfg}")
+        _LOGGER.info(f"전기요금 계산 : kwh:{kwh} pressure:{pressure} checkDay:{checkDay} today:{today_str} bigfamDcCfg:{bigfamDcCfg} welfareDcCfg:{welfareDcCfg}")
 
         if kwh is not None:
             # today를 datetime 객체로 변환
