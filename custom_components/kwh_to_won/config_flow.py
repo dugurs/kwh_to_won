@@ -99,9 +99,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         options_schema = vol.Schema(_option_schema(self.hass, conf))
         
+        suggested_values = {**conf.data, **conf.options}
+        for key in ("checkday_config", "bigfam_dc_config", "welfare_dc_config"):
+            if key in suggested_values and suggested_values[key] is not None:
+                suggested_values[key] = str(suggested_values[key])
+
         return self.async_show_form(
             step_id="init",
-            data_schema=self.add_suggested_values_to_schema(options_schema, user_input or conf.options or conf.data),
+            data_schema=self.add_suggested_values_to_schema(options_schema, user_input or suggested_values),
         )
 
 def _option_schema(hass: HomeAssistant, config_entry: config_entries.ConfigEntry | None = None):
@@ -135,9 +140,9 @@ def _option_schema(hass: HomeAssistant, config_entry: config_entries.ConfigEntry
                 "mode": "dropdown"
             }
         }),
-        vol.Optional("forecast_energy_entity"): str,
-        vol.Optional("prev_energy_entity"): str,
-        vol.Optional("prev2_energy_entity"): str,
+        vol.Optional("forecast_energy_entity"): selector({"text": {}}),
+        vol.Optional("prev_energy_entity"): selector({"text": {}}),
+        vol.Optional("prev2_energy_entity"): selector({"text": {}}),
         vol.Required("calibration_config"): selector({
             "number": {
                 "min": 0,
