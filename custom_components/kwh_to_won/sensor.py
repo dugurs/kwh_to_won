@@ -198,8 +198,7 @@ class ExtendSensor(SensorBase):
         self._device_class = SENSOR_TYPES[sensor_type][1]
         self._unit_of_measurement = SENSOR_TYPES[sensor_type][2]
         self._icon = SENSOR_TYPES[sensor_type][3]
-        if SENSOR_TYPES[sensor_type][4]:
-            self._extra_state_attributes['state_class'] = SENSOR_TYPES[sensor_type][4]
+        self._state_class = SENSOR_TYPES[sensor_type][4] if SENSOR_TYPES[sensor_type][4] else None
         self._prev_energy = 0
         if self._sensor_type == "kwhto_forecast":
             self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
@@ -343,6 +342,11 @@ class ExtendSensor(SensorBase):
     def should_poll(self):
         """폴링(주기적 상태 조회)이 필요 없음을 명시합니다."""
         return False
+
+    @property
+    def state_class(self) -> Optional[str]:
+        """센서의 상태 클래스를 반환합니다."""
+        return self._state_class
 
     # --- [수정 시작] ---
     # 예상 사용량(kWh)을 가져오는 로직을 별도의 헬퍼 메소드로 분리합니다.
