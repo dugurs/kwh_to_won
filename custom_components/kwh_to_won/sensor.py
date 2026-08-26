@@ -30,7 +30,7 @@ _LOGGER = logging.getLogger(__name__)
 # 형식: '센서타입': ['이름', '디바이스 클래스', '단위', '아이콘', '상태 클래스']
 SENSOR_TYPES = {
     'kwhto_kwh': ['전기 현재사용량', SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 'mdi:counter', 'total_increasing'],
-    'kwhto_won': ['전기 사용요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', 'total_increasing'],
+    'kwhto_won': ['전기 사용요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', 'total'],
     'kwhto_forecast': ['전기 예상사용량', SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 'mdi:counter', ''],
     'kwhto_forecast_won': ['전기 예상요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', ''],
     'kwhto_won_prev': ['전기 전월 사용요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', 'total'],
