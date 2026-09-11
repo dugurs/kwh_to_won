@@ -32,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_TYPES = {
     'kwhto_kwh': ['전기 현재사용량', SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 'mdi:counter', 'total_increasing'],
     'kwhto_won': ['전기 사용요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', 'total'],
+    'kwhto_step': ['전기 현재 누진단계', None, '단계', 'mdi:stairs', None],
     'kwhto_forecast': ['전기 예상사용량', SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 'mdi:counter', ''],
     'kwhto_forecast_won': ['전기 예상요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', ''],
     'kwhto_won_prev': ['전기 전월 사용요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', 'total'],
@@ -53,7 +54,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     forecast_energy_entity = config_entry.options.get("forecast_energy_entity", config_entry.data.get("forecast_energy_entity"))
     prev_energy_entity = config_entry.options.get("prev_energy_entity", config_entry.data.get("prev_energy_entity"))
     prev2_energy_entity = config_entry.options.get("prev2_energy_entity", config_entry.data.get("prev2_energy_entity"))
-    calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
+    calibration_config = float(config_entry.options.get("calibration_config") or config_entry.data.get("calibration_config") or 0)
     if (forecast_energy_entity == " " or forecast_energy_entity is None):
         forecast_energy_entity = ""
 
@@ -61,17 +62,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     # SENSOR_TYPES에 정의된 각 센서에 대해 객체를 생성합니다.
     for sensor_type in SENSOR_TYPES:
+        target_energy_entity = energy_entity
         # 전월/전전월 요금 센서는 해당 엔티티가 설정된 경우에만 생성합니다.
         if sensor_type == "kwhto_won_prev":
             if not _is_valid_entity_id(prev_energy_entity):
                 continue
-            else:
-                energy_entity = prev_energy_entity
+            target_energy_entity = prev_energy_entity
         elif sensor_type == "kwhto_won_prev2":
             if not _is_valid_entity_id(prev2_energy_entity):
                 continue
-            else:
-                energy_entity = prev2_energy_entity
+            target_energy_entity = prev2_energy_entity
         # 보정 사용량 센서는 보정계수가 0이 아닌 경우에만 생성합니다.
         elif sensor_type == "kwhto_kwh":
             if calibration_config == 0:
@@ -87,7 +87,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             ExtendSensor(
                 hass,
                 device,
-                energy_entity,
+                target_energy_entity,
                 checkday_config,
                 pressure_config,
                 bigfam_dc_config,
@@ -102,6 +102,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # 생성된 센서가 있다면 Home Assistant에 한 번에 추가합니다.
     if new_devices:
         async_add_entities(new_devices)
+        entry_data = hass.data.get(DOMAIN, {}).get(config_entry.entry_id)
+        if entry_data is not None:
+            entry_data["entities"] = new_devices
 
 class SensorBase(SensorEntity):
     """이 통합 구성요소의 모든 센서에 대한 기본 클래스입니다."""
@@ -428,6 +431,26 @@ class ExtendSensor(SensorBase):
                     last_reset = dt_util.utcnow().isoformat()
                 if last_reset:
                     new_attributes['last_reset'] = last_reset
+
+            elif self._sensor_type == "kwhto_step": # 현재 누진 단계 센서
+                ret = self.KWH2WON.kwh2won(self._energy, datetime.datetime.now())
+                current_step = ret['mm1']['kwhStep']
+                if ret['mm2']['useDays'] > 0:
+                    current_step = max(ret['mm1']['kwhStep'], ret['mm2']['kwhStep'])
+                self._state = current_step
+                new_attributes['사용량'] = self._energy
+                new_attributes['검침시작일'] = f"{ret['checkMonth']}월 {ret['checkDay']}일"
+                new_attributes['사용일수'] = ret['useDays']
+                new_attributes['남은일수'] = ret['monthDays'] - ret['useDays']
+                seasonName = {'etc':'기타','summer':'하계', 'winter':'동계'}
+                season1 = None
+                if ret['mm1']['useDays'] > 0:
+                    season1 = seasonName[ret['mm1']['season']]
+                    new_attributes[f'누진단계_{season1}'] = ret['mm1']['kwhStep']
+                if ret['mm2']['useDays'] > 0:
+                    season2 = seasonName[ret['mm2']['season']]
+                    if season1 == season2: season2 += '2'
+                    new_attributes[f'누진단계_{season2}'] = ret['mm2']['kwhStep']
             
             else: # 요금(won)을 계산하는 모든 센서들
                 ret = None

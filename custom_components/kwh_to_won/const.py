@@ -3,9 +3,15 @@
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "1.7.3"
+VERSION = "1.7.4"
 MODEL = "kwh2won"
 MANUFACTURER = "다은아빠"
+
+RATES_URL = "https://raw.githubusercontent.com/dugurs/kwh_to_won/main/custom_components/kwh_to_won/rates.json"
+
+SERVICE_CALCULATE = "calculate"
+SERVICE_RELOAD_RATES = "reload_rates"
+SERVICE_UPDATE_RATES = "update_rates"
 
 PRESSURE_OPTION = {
     'low': '가정용 저압',

@@ -119,6 +119,37 @@ class TestKwh2WonAPI(unittest.TestCase):
         # 검증: 실패 로그에 나온 실제 계산 결과값으로 기대값을 업데이트합니다.
         self.assertEqual(result['total'], 388020)
 
+    def test_validate_and_reload_rates(self):
+        """요금 데이터 검증 및 리로드 테스트"""
+        from kwh2won_api import validate_rates_data, reload_rates_data
+        
+        # 유효하지 않은 데이터 검증
+        self.assertFalse(validate_rates_data({}))
+        self.assertFalse(validate_rates_data("invalid"))
+        self.assertFalse(validate_rates_data({"PRICE_BASE": {}}))
+        
+        # 로컬 파일 리로드 정상 작동 확인
+        self.assertTrue(reload_rates_data())
+
+    def test_kwh_step_progression(self):
+        """누진단계 단계별 판정 테스트 (기타계절: 1단계 ~200, 2단계 201~400, 3단계 401~)"""
+        api = kwh2won_api.kwh2won_api(
+            pressure='low',
+            checkDay=1,
+            today=datetime(2025, 10, 31)
+        )
+        # 1단계 (150kWh)
+        res1 = api.kwh2won(150)
+        self.assertEqual(res1['mm1']['kwhStep'], 1)
+        
+        # 2단계 (350kWh)
+        res2 = api.kwh2won(350)
+        self.assertEqual(res2['mm1']['kwhStep'], 2)
+        
+        # 3단계 (550kWh)
+        res3 = api.kwh2won(550)
+        self.assertEqual(res3['mm1']['kwhStep'], 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -19,6 +19,13 @@ def merge(dict1, dict2):
             result[key] = deepcopy(dict2[key])
     return result
 
+def validate_rates_data(data: dict) -> bool:
+    """요금 데이터의 필수 키가 모두 존재하는지 유효성을 검사합니다."""
+    required_keys = ["PRICE_BASE", "PRICE_KWH", "PRICE_ADJUSTMENT", "BASE_FUND", "PRICE_ELECBASIC", "PRICE_DC"]
+    if not isinstance(data, dict):
+        return False
+    return all(key in data and isinstance(data[key], dict) for key in required_keys)
+
 # 파일 I/O를 클래스 외부에서 단 한 번만 실행하여 클래스 변수에 저장합니다.
 def _load_rates_data():
     """요금 정보 JSON 파일을 로드하여 딕셔너리로 반환합니다."""
@@ -29,6 +36,16 @@ def _load_rates_data():
     except (FileNotFoundError, json.JSONDecodeError) as e:
         _LOGGER.error(f"요금 정보 파일(rates.json)을 로드하는 데 실패했습니다: {e}")
         return None
+
+def reload_rates_data():
+    """요금 정보 파일(rates.json)을 다시 읽어 전역 RATES_DATA를 갱신합니다."""
+    global RATES_DATA
+    data = _load_rates_data()
+    if data is not None and validate_rates_data(data):
+        RATES_DATA = data
+        _LOGGER.debug("RATES_DATA 메모리 갱신 완료")
+        return True
+    return False
 
 # 통합 구성요소가 로드될 때 단 한번만 파일을 읽어 RATES_DATA 변수에 저장합니다.
 RATES_DATA = _load_rates_data()
@@ -159,6 +176,8 @@ class kwh2won_api:
     def __init__(self, pressure='low', checkDay=1, today=None, bigfamDcCfg=0, welfareDcCfg=0):
         # 파일에서 직접 읽는 대신, 메모리에 로드된 클래스 변수를 사용합니다.
         if RATES_DATA is None:
+            reload_rates_data()
+        if RATES_DATA is None:
             raise ValueError("요금 정보(RATES_DATA)가 유효하지 않습니다. rates.json 파일을 확인하세요.")
         self.RATES = RATES_DATA
         
@@ -224,6 +243,15 @@ class kwh2won_api:
             'total': 0, # 청구금액
         }
         self.calc_lengthDays() # 사용일 구하기 호출
+
+    def reload_rates(self):
+        """인스턴스의 요금 데이터를 최신 전역 RATES_DATA로 동기화하고 캐시를 초기화합니다."""
+        global RATES_DATA
+        if RATES_DATA is None:
+            reload_rates_data()
+        self.RATES = RATES_DATA
+        if hasattr(self, '_price_cache'):
+            self._price_cache.clear()
 
 
     # 당월 단가 찾기

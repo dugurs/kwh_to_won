@@ -112,3 +112,11 @@ calculate:
               label: "기초생활(주거.교육)"
             - value: "5"
               label: "차상위계층"
+
+reload_rates:
+  name: "요금표 다시 로드"
+  description: "로컬의 rates.json 파일을 다시 읽어들여 요금 계산에 즉시 반영합니다. (HA 재시작 불필요)"
+
+update_rates:
+  name: "요금표 원격 업데이트"
+  description: "GitHub에서 최신 rates.json 요금표를 다운로드하여 검증 후 로컬에 저장하고 즉시 반영합니다."
