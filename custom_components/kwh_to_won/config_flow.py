@@ -1,9 +1,7 @@
-"""Config flow for Damda Weather integration."""
+"""Config flow for kWh to Won integration."""
 from __future__ import annotations
 
 from typing import AbstractSet, Any
-from tokenize import Number
-from urllib.parse import quote_plus, unquote
 
 import voluptuous as vol
 from homeassistant.const import CONF_DEVICE_CLASS, CONF_UNIT_OF_MEASUREMENT, UnitOfEnergy
@@ -19,7 +17,7 @@ from .const import DOMAIN, CHECKDAY_OPTION, BIGFAM_DC_OPTION, WELFARE_DC_OPTION,
 # _LOGGER = logging.getLogger(__name__)
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Damda Weather."""
+    """Handle a config flow for kWh to Won."""
 
     VERSION = 1
 
@@ -28,6 +26,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
+            await self.async_set_unique_id(user_input['device_name'])
+            self._abort_if_unique_id_configured()
             return self.async_create_entry(title=user_input['device_name'], data=user_input)
             
         data_schema = vol.Schema({
@@ -169,6 +169,8 @@ def _kwh_energy_sensors(hass: HomeAssistant):
 
 def _attr_filter(hass: HomeAssistant, sensor: str, stateClasses: AbstractSet[str]):
     state = hass.states.get(sensor)
+    if state is None or not state.attributes:
+        return False
 
     if '_kwhto_' in sensor:
         return False

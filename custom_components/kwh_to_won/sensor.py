@@ -3,14 +3,15 @@ import logging
 from typing import Optional
 
 # Home Assistant Core에서 필요한 상수 및 클래스를 가져옵니다.
-from homeassistant.const import STATE_UNKNOWN, STATE_UNAVAILABLE, CONF_UNIQUE_ID, UnitOfEnergy
-from homeassistant.components.sensor import ENTITY_ID_FORMAT, SensorDeviceClass
+from homeassistant.const import STATE_UNKNOWN, STATE_UNAVAILABLE, UnitOfEnergy
+from homeassistant.components.sensor import ENTITY_ID_FORMAT, SensorDeviceClass, SensorEntity
 
 import asyncio
 from homeassistant import util
+from homeassistant.util import dt as dt_util
 
 # Home Assistant 엔티티 및 이벤트 관련 헬퍼 함수를 가져옵니다.
-from homeassistant.helpers.entity import Entity, async_generate_entity_id
+from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.core import Event, callback
 # async_track_state_change_event: 특정 엔티티의 상태 변경을 감지하는 리스너를 등록합니다.
 # async_call_later: 지정된 시간 후에 특정 함수를 실행하도록 예약(스케줄링)합니다. (디바운싱에 사용)
@@ -37,7 +38,7 @@ SENSOR_TYPES = {
     'kwhto_won_prev2': ['전기 전전월 사용요금', SensorDeviceClass.MONETARY, 'krw', 'mdi:cash-100', 'total'],
 }
 
-async def async_setup_entry(hass, config_entry, async_add_devices):
+async def async_setup_entry(hass, config_entry, async_add_entities):
     """config_entry를 기반으로 센서를 설정하고 Home Assistant에 추가합니다."""
 
     # 사용자가 설정한 기기 이름을 기반으로 부모 디바이스 객체를 생성합니다.
@@ -55,8 +56,6 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
     calibration_config = config_entry.options.get("calibration_config", config_entry.data.get("calibration_config"))
     if (forecast_energy_entity == " " or forecast_energy_entity is None):
         forecast_energy_entity = ""
-
-    hass.data[DOMAIN]["listener"] = []
 
     new_devices = [] # Home Assistant에 추가될 센서 엔티티 목록
 
@@ -79,6 +78,11 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
                 continue
         
         # 센서 객체를 생성하여 목록에 추가합니다.
+        # [참고] unique_id 인자로 (device.device_id + sensor_type)을 전달하고,
+        # 아래 ExtendSensor.unique_id 프로퍼티에서 self._sensor_type이 한 번 더 결합되어
+        # 실제 등록되는 unique_id는 '{device_name}{sensor_type}{sensor_type}' 형태가 됩니다. (예: Homekwhto_wonkwhto_won)
+        # 이를 임의로 변경하면 기존 사용자의 엔티티가 중복 생성(_2)되거나 분리되므로,
+        # 하위 호환성 유지를 위해 현행 방식을 유지합니다.
         new_devices.append(
             ExtendSensor(
                 hass,
@@ -91,15 +95,15 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
                 forecast_energy_entity,
                 calibration_config,
                 sensor_type,
-                device.device_id + sensor_type # Unique ID
+                device.device_id + sensor_type # Unique ID (하위 호환성 유지)
             )
         )
         
     # 생성된 센서가 있다면 Home Assistant에 한 번에 추가합니다.
     if new_devices:
-        async_add_devices(new_devices)
+        async_add_entities(new_devices)
 
-class SensorBase(Entity):
+class SensorBase(SensorEntity):
     """이 통합 구성요소의 모든 센서에 대한 기본 클래스입니다."""
 
     should_poll = False # 상태를 주기적으로 가져오지 않고, 이벤트 기반으로 업데이트합니다.
@@ -123,28 +127,14 @@ class SensorBase(Entity):
     def available(self) -> bool:
         """엔티티가 사용 가능한 상태인지 여부를 반환합니다."""
         return True
-        
-    async def async_added_to_hass(self):
-        """엔티티가 Home Assistant에 추가될 때 실행됩니다."""
-        # 디바이스의 상태 변경 콜백을 등록합니다.
-        self._device.register_callback(self.async_write_ha_state)
-
-    async def async_will_remove_from_hass(self):
-        """엔티티가 Home Assistant에서 제거되기 전에 실행됩니다."""
-        # 등록했던 콜백을 제거합니다.
-        self._device.remove_callback(self.async_write_ha_state)
 
 class Device:
-    """Home Assistant UI에 표시될 가상의 부모 디바이스 클래스입니다."""
+    """Home Assistant UI에 표시될 가상의 부모 디바이스 메타데이터 클래스입니다."""
 
     def __init__(self, name):
         """가상 디바이스를 초기화합니다."""
         self._id = name
         self.name = name
-        self._callbacks = set()
-        self._loop = asyncio.get_event_loop()
-        
-        # 디바이스의 고정된 정보
         self.firmware_version = VERSION
         self.model = MODEL
         self.manufacturer = MANUFACTURER
@@ -153,19 +143,6 @@ class Device:
     def device_id(self):
         """디바이스의 ID를 반환합니다."""
         return self._id
-
-    def register_callback(self, callback):
-        """상태 변경 시 호출될 콜백 함수를 등록합니다."""
-        self._callbacks.add(callback)
-
-    def remove_callback(self, callback):
-        """등록된 콜백 함수를 제거합니다."""
-        self._callbacks.discard(callback)
-
-    async def publish_updates(self):
-        """등록된 모든 콜백 함수를 실행하여 상태 업데이트를 알립니다."""
-        for callback in self._callbacks:
-            callback()
 
 class ExtendSensor(SensorBase):
     """전기 요금 계산을 수행하고 상태를 표시하는 메인 센서 클래스입니다."""
@@ -201,7 +178,7 @@ class ExtendSensor(SensorBase):
         self._state_class = SENSOR_TYPES[sensor_type][4] if SENSOR_TYPES[sensor_type][4] else None
         self._prev_energy = 0
         if self._sensor_type == "kwhto_forecast":
-            self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+            self._extra_state_attributes['last_reset'] = dt_util.utcnow().isoformat()
         
         # 디바운싱(Debouncing): 잦은 업데이트를 방지하기 위한 취소 핸들러
         self._debounce_cancel_handle = None
@@ -219,25 +196,57 @@ class ExtendSensor(SensorBase):
             welfareDcCfg=welfare_dc_config,
             )
 
-        # 원본 에너지 센서의 상태 변경을 감지하는 리스너를 등록합니다.
-        self._energy = self.setStateListener(hass, self._energy_entity, self.energy_state_listener)
-        self._energy_row = self._energy
-
-        # 예상 사용량 센서가 별도로 지정된 경우, 해당 센서의 리스너도 등록합니다.
-        if self._forecast_energy_entity:
-            self.setStateListener(hass, self._forecast_energy_entity, self.forecast_energy_state_listener)
+        # 초기 에너지 값 읽기
+        entity_state = self.hass.states.get(self._energy_entity)
+        if _is_valid_state(entity_state):
+            self._energy = util.convert(entity_state.state, float)
+            self._energy_row = self._energy
 
         # 초기 상태를 한 번 업데이트합니다.
         self.update()
 
-    def setStateListener(self, hass, entity, listener):
-        """지정된 엔티티에 대한 상태 변경 리스너를 등록하고 초기값을 반환합니다."""
-        hass.data[DOMAIN]["listener"].append(async_track_state_change_event(
-                self.hass, entity, listener))
-            
-        entity_state = self.hass.states.get(entity)
-        if _is_valid_state(entity_state):
-            return float(entity_state.state)
+    async def async_added_to_hass(self):
+        """엔티티가 Home Assistant에 추가될 때 실행됩니다."""
+        await super().async_added_to_hass()
+
+        # 디바운스 타이머 취소 핸들러 정리 등록
+        self.async_on_remove(self._cancel_debounce)
+
+        # 초기값 재확인 (시작 시점에 엔티티 상태가 늦게 로드된 경우 대비)
+        if self._energy is None and self._energy_entity:
+            entity_state = self.hass.states.get(self._energy_entity)
+            if _is_valid_state(entity_state):
+                self._energy = util.convert(entity_state.state, float)
+                self._energy_row = self._energy
+                self.update()
+
+        # 원본 에너지 센서의 상태 변경을 감지하는 리스너를 등록합니다. (엔티티 언로드 시 자동 해제)
+        if self._energy_entity:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, self._energy_entity, self.energy_state_listener
+                )
+            )
+
+        # 예상 사용량 센서가 별도로 지정된 경우, 해당 센서의 리스너도 등록합니다. (엔티티 언로드 시 자동 해제)
+        if self._forecast_energy_entity:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, self._forecast_energy_entity, self.forecast_energy_state_listener
+                )
+            )
+
+    @callback
+    def _cancel_debounce(self):
+        """예약된 디바운스 타이머가 있다면 취소합니다."""
+        if self._debounce_cancel_handle:
+            self._debounce_cancel_handle()
+            self._debounce_cancel_handle = None
+
+    async def async_will_remove_from_hass(self):
+        """엔티티가 Home Assistant에서 제거되기 전에 실행됩니다."""
+        self._cancel_debounce()
+        await super().async_will_remove_from_hass()
 
     @callback
     async def _async_deferred_update(self, *args):
@@ -262,9 +271,7 @@ class ExtendSensor(SensorBase):
                 
                 # 디바운싱 로직: 즉시 업데이트하지 않고, 1초 뒤로 업데이트를 예약합니다.
                 if self.enabled:
-                    # 이전에 예약된 업데이트가 있다면 취소합니다.
-                    if self._debounce_cancel_handle:
-                        self._debounce_cancel_handle()
+                    self._cancel_debounce()
                     
                     # 1초 뒤에 _async_deferred_update 함수를 실행하도록 예약합니다.
                     self._debounce_cancel_handle = async_call_later(
@@ -285,8 +292,7 @@ class ExtendSensor(SensorBase):
 
         # 이 리스너도 동일하게 디바운싱 로직을 적용합니다.
         if self.enabled:
-            if self._debounce_cancel_handle:
-                self._debounce_cancel_handle()
+            self._cancel_debounce()
             
             self._debounce_cancel_handle = async_call_later(
                 self.hass,
@@ -296,7 +302,16 @@ class ExtendSensor(SensorBase):
 
     @property
     def unique_id(self) -> str:
-        """센서의 고유 ID를 반환합니다."""
+        """센서의 고유 ID를 반환합니다.
+        
+        [하위 호환성 유지]
+        생성자에서 self._unique_id로 (device.device_id + sensor_type)이 전달되므로,
+        여기서 self._sensor_type을 추가 결합하여 '{device_id}{sensor_type}{sensor_type}'
+        형태(예: Homekwhto_wonkwhto_won)가 반환됩니다.
+        기존 사용자의 Home Assistant 엔티티 레지스트리가 이 ID로 바인딩되어 있으므로,
+        별도의 Entity Registry 마이그레이션 없이 임의로 수정할 경우 기존 엔티티가
+        고아(Orphan) 상태가 되고 _2 엔티티가 중복 생성되므로 현행 방식을 유지합니다.
+        """
         if self._unique_id is not None:
             return self._unique_id + self._sensor_type
             
@@ -381,16 +396,20 @@ class ExtendSensor(SensorBase):
             if self._calibration > 0:
                 self._energy = round(self._energy_row * self._calibration, 1)
 
+            # 이전 속성이 누적되어 불필요한 속성이 남지 않도록 새 딕셔너리로 갱신합니다.
+            new_attributes = {}
+
             # 2. 센서 타입별로 분기하여 상태를 계산합니다.
             if self._sensor_type == "kwhto_kwh": # 보정된 현재 사용량 센서
                 self._state = self._energy
-                self._extra_state_attributes['측정사용량'] = self._energy_row
-                self._extra_state_attributes['보정계수'] = self._calibration
+                new_attributes['측정사용량'] = self._energy_row
+                new_attributes['보정계수'] = self._calibration
+                last_reset = self._extra_state_attributes.get('last_reset')
                 if self._energy < self._prev_energy: # 사용량이 리셋된 경우
-                    self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+                    last_reset = dt_util.utcnow().isoformat()
+                if last_reset:
+                    new_attributes['last_reset'] = last_reset
             
-            # --- [수정 시작] ---
-            # 중복 로직을 제거하고 새로 만든 헬퍼 메소드를 사용하도록 수정합니다.
             elif self._sensor_type == "kwhto_forecast": # 예상 전기 사용량 센서
                 forecast_kwh = self._get_forecast_kwh()
                 if forecast_kwh is None:
@@ -400,12 +419,15 @@ class ExtendSensor(SensorBase):
                 self._state = forecast_kwh
                 # 상세 속성 표시를 위해 forecast 정보는 항상 계산합니다.
                 forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
-                self._extra_state_attributes['사용량'] = self._energy
-                self._extra_state_attributes['검침시작일'] = f"{forecast['checkMonth']}월 {forecast['checkDay']}일"
-                self._extra_state_attributes['사용일수'] = forecast['useDays']
-                self._extra_state_attributes['남은일수'] = forecast['monthDays'] - forecast['useDays']
+                new_attributes['사용량'] = self._energy
+                new_attributes['검침시작일'] = f"{forecast['checkMonth']}월 {forecast['checkDay']}일"
+                new_attributes['사용일수'] = forecast['useDays']
+                new_attributes['남은일수'] = forecast['monthDays'] - forecast['useDays']
+                last_reset = self._extra_state_attributes.get('last_reset')
                 if self._energy < self._prev_energy:
-                    self._extra_state_attributes['last_reset'] = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+                    last_reset = dt_util.utcnow().isoformat()
+                if last_reset:
+                    new_attributes['last_reset'] = last_reset
             
             else: # 요금(won)을 계산하는 모든 센서들
                 ret = None
@@ -427,45 +449,45 @@ class ExtendSensor(SensorBase):
                         return
 
                     ret = self.KWH2WON.kwh2won(forecast_kwh, datetime.datetime.now())
-                    self._extra_state_attributes['예상사용량'] = forecast_kwh
-                # --- [수정 끝] ---
+                    new_attributes['예상사용량'] = forecast_kwh
                 
                 # 계산 결과를 상태와 상세 속성에 반영합니다.
                 self._state = ret['total']
-                self._extra_state_attributes['사용량'] = self._energy
-                self._extra_state_attributes['검침시작일'] = f"{ret['checkMonth']}월 {ret['checkDay']}일"
-                self._extra_state_attributes['사용일수'] = ret['useDays']
-                self._extra_state_attributes['남은일수'] = ret['monthDays'] - ret['useDays']
-                self._extra_state_attributes['사용용도'] = PRESSURE_OPTION[ret['pressure']]
-                self._extra_state_attributes['대가족_할인'] = BIGFAM_DC_OPTION[ret['bigfamDcCfg']]
-                self._extra_state_attributes['복지_할인'] = WELFARE_DC_OPTION[ret['welfareDcCfg']]
+                new_attributes['사용량'] = self._energy
+                new_attributes['검침시작일'] = f"{ret['checkMonth']}월 {ret['checkDay']}일"
+                new_attributes['사용일수'] = ret['useDays']
+                new_attributes['남은일수'] = ret['monthDays'] - ret['useDays']
+                new_attributes['사용용도'] = PRESSURE_OPTION[ret['pressure']]
+                new_attributes['대가족_할인'] = BIGFAM_DC_OPTION[ret['bigfamDcCfg']]
+                new_attributes['복지_할인'] = WELFARE_DC_OPTION[ret['welfareDcCfg']]
                 
                 seasonName = {'etc':'기타','summer':'하계', 'winter':'동계'}
                 season1 = None
                 if ret['mm1']['useDays'] > 0:
                     season1 = seasonName[ret['mm1']['season']]
-                    self._extra_state_attributes[f'누진단계_{season1}'] = ret['mm1']['kwhStep']
+                    new_attributes[f'누진단계_{season1}'] = ret['mm1']['kwhStep']
                 if ret['mm2']['useDays'] > 0:
                     season2 = seasonName[ret['mm2']['season']]
                     if season1 == season2: season2 += '2'
-                    self._extra_state_attributes[f'누진단계_{season2}'] = ret['mm2']['kwhStep']
+                    new_attributes[f'누진단계_{season2}'] = ret['mm2']['kwhStep']
                     
-                self._extra_state_attributes['기본요금'] = ret['basicWon']
-                self._extra_state_attributes['전력량요금'] = ret['kwhWon']
-                self._extra_state_attributes['기후환경요금'] = ret['climateWon']
-                self._extra_state_attributes['연료비조정액'] = ret['fuelWon']
+                new_attributes['기본요금'] = ret['basicWon']
+                new_attributes['전력량요금'] = ret['kwhWon']
+                new_attributes['기후환경요금'] = ret['climateWon']
+                new_attributes['연료비조정액'] = ret['fuelWon']
                 if self._energy <= 200:
-                    self._extra_state_attributes['200kWh이하감액'] = ret['elecBasic200Dc'] * -1
+                    new_attributes['200kWh이하감액'] = ret['elecBasic200Dc'] * -1
                 if ret['bigfamDcCfg'] > 0:
-                    self._extra_state_attributes['대가족생명할인'] = ret['bigfamDc'] * -1
+                    new_attributes['대가족생명할인'] = ret['bigfamDc'] * -1
                 if ret['welfareDcCfg'] > 0:
-                    self._extra_state_attributes['복지요금할인'] = ret['welfareDc'] * -1
+                    new_attributes['복지요금할인'] = ret['welfareDc'] * -1
                 if (ret['bigfamDcCfg'] > 0 or ret['welfareDcCfg'] > 0):
-                    self._extra_state_attributes['요금동결할인'] = ret['weakDc'] * -1
-                self._extra_state_attributes['전기요금계'] = ret['elecSumWon']
-                self._extra_state_attributes['부가가치세'] = ret['vat']
-                self._extra_state_attributes['전력산업기반기금'] = ret['baseFund']
+                    new_attributes['요금동결할인'] = ret['weakDc'] * -1
+                new_attributes['전기요금계'] = ret['elecSumWon']
+                new_attributes['부가가치세'] = ret['vat']
+                new_attributes['전력산업기반기금'] = ret['baseFund']
 
+            self._extra_state_attributes = new_attributes
             # 다음 리셋 감지를 위해 현재 사용량을 저장합니다.
             self._prev_energy = self._energy
 

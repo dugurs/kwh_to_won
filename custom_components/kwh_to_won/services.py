@@ -2,7 +2,7 @@ import datetime
 import logging
 from .kwh2won_api import kwh2won_api
 import voluptuous as vol
-from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.helpers import config_validation as cv
 
 from homeassistant.core import (
     HomeAssistant,
@@ -15,14 +15,14 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-QUERY_IMAGE_SCHEMA = vol.Schema(
+CALCULATE_SCHEMA = vol.Schema(
     {
-        vol.Required("kwh"): cv.positive_int,
+        vol.Required("kwh"): vol.Coerce(float),
         vol.Required("pressure"): cv.string,
-        vol.Required("checkDay", default=0): cv.positive_int,
+        vol.Required("checkDay", default=0): vol.Coerce(int),
         vol.Required("today"): cv.string,
-        vol.Optional("bigfamDcCfg", default=0): cv.positive_int,
-        vol.Optional("welfareDcCfg", default=0): cv.positive_int,
+        vol.Optional("bigfamDcCfg", default=0): vol.Coerce(int),
+        vol.Optional("welfareDcCfg", default=0): vol.Coerce(int),
     }
 )
 async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
@@ -62,6 +62,6 @@ async def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         DOMAIN,
         'calculate',
         calculate,
-        schema=QUERY_IMAGE_SCHEMA,
+        schema=CALCULATE_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )

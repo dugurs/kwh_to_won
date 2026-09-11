@@ -2,6 +2,7 @@
 import asyncio
 import logging
 
+from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SOURCE
 from homeassistant.core import HomeAssistant
@@ -55,10 +56,6 @@ async def async_update_options(hass, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
-    
-    # for listener in hass.data[DOMAIN]["listener"]:
-    #     listener()
-
     unload_ok = all(
         await asyncio.gather(
             *[

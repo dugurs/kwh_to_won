@@ -1,12 +1,11 @@
-"""Constants for the Detailed Hello World Push integration."""
+"""Constants for the kWh to Won integration."""
 
 # This is the internal name of the integration, it should also match the directory
 # name for the integration.
 DOMAIN = "kwh_to_won"
-VERSION = "1.7"
+VERSION = "1.7.3"
 MODEL = "kwh2won"
 MANUFACTURER = "다은아빠"
-SERVICE_QUERY_IMAGE = "query_image"  # 예시로 추가한 정의
 
 PRESSURE_OPTION = {
     'low': '가정용 저압',
