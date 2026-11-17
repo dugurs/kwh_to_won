@@ -95,7 +95,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                 forecast_energy_entity,
                 calibration_config,
                 sensor_type,
-                device.device_id + sensor_type # Unique ID (하위 호환성 유지)
+                device.device_id + sensor_type, # Unique ID (하위 호환성 유지)
+                prev_energy_entity,
             )
         )
         
@@ -159,7 +160,8 @@ class ExtendSensor(SensorBase):
                         forecast_energy_entity,
                         calibration_config,
                         sensor_type,
-                        unique_id):
+                        unique_id,
+                        prev_energy_entity=None):
         """센서의 모든 속성을 초기화하고 리스너를 설정합니다."""
         super().__init__(device)
 
@@ -170,6 +172,7 @@ class ExtendSensor(SensorBase):
         self._state = None
         self._sensor_type = sensor_type
         self._forecast_energy_entity = forecast_energy_entity if _is_valid_entity_id(forecast_energy_entity) else None
+        self._prev_energy_entity = prev_energy_entity if _is_valid_entity_id(prev_energy_entity) else None
         self._calibration = calibration_config
         self._unique_id = unique_id
         self._device = device
@@ -239,6 +242,14 @@ class ExtendSensor(SensorBase):
                 )
             )
 
+        # 예상 사용량/예상 요금 센서이고 전월 센서가 지정된 경우, 전월 센서의 리스너도 등록합니다. (엔티티 언로드 시 자동 해제)
+        if self._sensor_type in ("kwhto_forecast", "kwhto_forecast_won") and self._prev_energy_entity:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, self._prev_energy_entity, self.prev_energy_state_listener
+                )
+            )
+
     @callback
     def _cancel_debounce(self):
         """예약된 디바운스 타이머가 있다면 취소합니다."""
@@ -297,6 +308,24 @@ class ExtendSensor(SensorBase):
         if self.enabled:
             self._cancel_debounce()
             
+            self._debounce_cancel_handle = async_call_later(
+                self.hass,
+                1, # 1초 지연
+                self._async_deferred_update
+            )
+
+    @callback
+    def prev_energy_state_listener(self, event: Event) -> None:
+        """(선택적) 전월 사용량 센서의 상태 변경을 처리하는 리스너입니다."""
+        new_state = event.data["new_state"]
+
+        if new_state is None or new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]:
+            _LOGGER.warning(f"전월 사용량 센서 {event.data['entity_id']}가 유효하지 않습니다.")
+        else:
+            _LOGGER.debug(f"전월 사용량 센서 상태 변경: {new_state.state}")
+
+        if self.enabled:
+            self._cancel_debounce()
             self._debounce_cancel_handle = async_call_later(
                 self.hass,
                 1, # 1초 지연
@@ -366,6 +395,19 @@ class ExtendSensor(SensorBase):
         """센서의 상태 클래스를 반환합니다."""
         return self._state_class
 
+    def _get_prev_energy_kwh(self) -> float | None:
+        """전월 사용량 센서로부터 보정된 사용량(kWh)을 가져옵니다."""
+        if not self._prev_energy_entity:
+            return None
+        state = self.hass.states.get(self._prev_energy_entity)
+        if not _is_valid_state(state):
+            return None
+        try:
+            prev = float(state.state)
+            return round(prev * self._calibration, 1) if self._calibration > 0 else prev
+        except (ValueError, TypeError):
+            return None
+
     # --- [수정 시작] ---
     # 예상 사용량(kWh)을 가져오는 로직을 별도의 헬퍼 메소드로 분리합니다.
     def _get_forecast_kwh(self) -> float | None:
@@ -387,7 +429,8 @@ class ExtendSensor(SensorBase):
         else:
             if self._energy is None:
                 return None
-            forecast_info = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
+            prev_kwh = self._get_prev_energy_kwh()
+            forecast_info = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now(), prev_kwh)
             return forecast_info['forecast']
     # --- [수정 끝] ---
 
@@ -421,7 +464,7 @@ class ExtendSensor(SensorBase):
                 
                 self._state = forecast_kwh
                 # 상세 속성 표시를 위해 forecast 정보는 항상 계산합니다.
-                forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now())
+                forecast = self.KWH2WON.energy_forecast(self._energy, datetime.datetime.now(), self._get_prev_energy_kwh())
                 new_attributes['사용량'] = self._energy
                 new_attributes['검침시작일'] = f"{forecast['checkMonth']}월 {forecast['checkDay']}일"
                 new_attributes['사용일수'] = forecast['useDays']

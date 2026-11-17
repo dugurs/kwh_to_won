@@ -150,6 +150,41 @@ class TestKwh2WonAPI(unittest.TestCase):
         res3 = api.kwh2won(550)
         self.assertEqual(res3['mm1']['kwhStep'], 3)
 
+    def test_energy_forecast_without_prev_energy(self):
+        """전월 사용량 센서가 없을 때 기존 계산 방식 하위 호환성 유지 테스트"""
+        api = kwh2won_api.kwh2won_api(checkDay=11)
+        today = datetime(2026, 11, 11, 0, 0, 1)
+        res = api.energy_forecast(0.1, today=today, prev_energy=None)
+        # 0.1 kWh / 1분 * 43200분 = 4320.0 kWh (기존 선형 예측 공식)
+        self.assertEqual(res['forecast'], 4320.0)
+
+    def test_energy_forecast_with_prev_energy_early_cycle_spike_prevention(self):
+        """이슈 #21: 검침일 극초반 전월 데이터 가중치를 통한 예상 사용량 급증 방지 테스트"""
+        api = kwh2won_api.kwh2won_api(checkDay=11)
+        # 11일 00:00:01 (검침 시작 직후 1분 경과, 0.1kWh 사용, 전월 388.1kWh)
+        today = datetime(2026, 11, 11, 0, 0, 1)
+        res = api.energy_forecast(0.1, today=today, prev_energy=388.1)
+        # 폭증(4320.0) 대신 전월 30/31일 비율에 맞춘 376.6 kWh로 안정적 예측
+        self.assertEqual(res['forecast'], 376.6)
+
+    def test_energy_forecast_convergence_at_cycle_end(self):
+        """검침 주기 말기 예상 사용량이 실사용량에 완벽 수렴하는지 테스트"""
+        api = kwh2won_api.kwh2won_api(checkDay=11)
+        # 12월 10일 23:59 (검침 주기 마지막 분, 실사용량 400.0kWh, 전월 388.1kWh)
+        today = datetime(2026, 12, 10, 23, 59, 0)
+        res = api.energy_forecast(400.0, today=today, prev_energy=388.1)
+        # 주기가 끝나면 실사용량 400.0에 정확히 수렴
+        self.assertEqual(res['forecast'], 400.0)
+
+    def test_energy_forecast_with_end_of_month_checkday(self):
+        """말일(checkDay=0) 검침일 시 전월 데이터 기반 예측 동작 테스트"""
+        api = kwh2won_api.kwh2won_api(checkDay=0)
+        # 2월 28일 00:00:01 (말일 검침 시작 직후 1분, 사용량 0.1kWh, 직전 기간 사용량 300.0kWh)
+        today = datetime(2025, 2, 28, 0, 0, 1)
+        res = api.energy_forecast(0.1, today=today, prev_energy=300.0)
+        # 직전 기간(1월 31일~2월 27일, 28일간) 대비 이번 기간(2월 28일~3월 30일, 31일간) 비율 반영: 333.2 kWh
+        self.assertAlmostEqual(res['forecast'], 333.2, delta=0.5)
+
 
 if __name__ == '__main__':
     unittest.main()

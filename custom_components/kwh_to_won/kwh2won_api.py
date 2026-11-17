@@ -282,13 +282,15 @@ class kwh2won_api:
 
 
 
+    PRIOR_MINUTES = 72 * 60  # 전월 데이터 혼합 가중치 시간 (72시간 = 3일)
+
     # 예상 사용량
     # 사용일 = (오늘 > 검침일) ? 오늘 - 검침일 : 전달일수 - 검침일 + 오늘
     # 월일수 = (오늘 > 검침일) ? 이번달일수 : 전달일수
     # 시간나누기 = ((사용일-1)*24)+(현재시간+1)
     # 시간곱하기 = 월일수*24
     # 예측 = 에너지 / 시간나누기 * 시간곱하기
-    def energy_forecast(self, energy, today=None):
+    def energy_forecast(self, energy, today=None, prev_energy=None):
         if today:
             self._ret['today'] = today
         self.calc_lengthDays() # 사용일 구하기 호출
@@ -298,7 +300,25 @@ class kwh2won_api:
         useDays = self._ret['useDays']
         monthDays = self._ret['monthDays']
 
-        forecast = round(energy / ((((useDays - 1) * 24) + today.hour) * 60 + today.minute + 1) * (monthDays * 24 * 60), 1)
+        hour = getattr(today, 'hour', 0)
+        minute = getattr(today, 'minute', 0)
+        elapsed = (((useDays - 1) * 24) + hour) * 60 + minute + 1
+        total = monthDays * 24 * 60
+
+        if prev_energy is not None and prev_energy > 0:
+            start = datetime.date(self._ret['checkYear'], checkMonth, checkDay)
+            prev_start = start - relativedelta(months=1)
+            if checkDay >= 28:
+                prev_start = self.last_day_of_month(prev_start)
+            prev_total = (start - prev_start).days * 24 * 60
+            if prev_total > 0:
+                rate = (energy + prev_energy * self.PRIOR_MINUTES / prev_total) / (elapsed + self.PRIOR_MINUTES)
+                forecast = round(energy + rate * max(total - elapsed, 0), 1)
+            else:
+                forecast = round(energy / elapsed * total, 1)
+        else:
+            forecast = round(energy / elapsed * total, 1)
+
         _LOGGER.debug(f"########### 예상사용량:{forecast}, 월길이 {monthDays}, 사용일 {useDays}, 검침일 {checkDay}, 오늘 {today.day}")
         return {
             'forecast': forecast,
